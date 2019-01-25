@@ -1,6 +1,7 @@
 import os
 import scipy as sp
 import fitsio
+import iminuit
 from functools import partial
 
 from redvsblue import utils
@@ -48,13 +49,18 @@ def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
     for k in dic.keys():
         dic[k] = dic[k][w]
 
+    unique, w = sp.unique(dic['THING_ID'], return_index=True)
+    print('Unique: {}'.format(w.size))
+    for k in dic.keys():
+        dic[k] = dic[k][w]
+
     return dic
-def read_spec_spplate(p,m,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
+def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
     """
 
 
     """
-    path = path_spec+'{}/spPlate-{}-{}.fits'.format(p,p,m)
+    path = path_spec+'/{}/spPlate-{}-{}.fits'.format(p,p,m)
 
     h = fitsio.FITS(path)
     fl = h[0].read()
@@ -83,8 +89,24 @@ def read_spec_spplate(p,m,path_spec=None, lambda_min=3600., lambda_max=7235., ve
         correction = ivar_calib(sp.log10(ll))
         iv /= correction[None,:]
 
+    if not fiber is None:
+        fl = fl[fiber-1]
+        iv = iv[fiber-1]
+
     return ll, fl, iv
-def read_SDSS_data(DRQ, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+def fit_spec(lamRF, flux, ivar, qso_pca=None):
+
+    model = sp.array([ el(lamRF) for el in qso_pca ])
+    def chi2(a0):
+        y = flux-a0*model[0]
+        return (y**2*ivar).sum()
+
+    a0 = abs(flux.mean())
+    mig = iminuit.Minuit(chi2,a0=a0,error_a0=a0/2.,errordef=1.,print_level=-1)
+    fmin,_ = mig.migrad()
+
+    return mig.values['a0']*model[0]
+def read_SDSS_data(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
 
@@ -97,6 +119,8 @@ def read_SDSS_data(DRQ, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda
     ###
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
+
+    p_fit_spec = partial(fit_spec, qso_pca=qso_pca)
 
     ### Sort PLATE-MJD
     pm = catQSO['PLATE']*100000 + catQSO['MJD']
@@ -134,15 +158,15 @@ def read_SDSS_data(DRQ, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda
             tfl = fl[f-1]
             tiv = iv[f-1]
             lamRF = lam/(1.+z)
-
             data[t] = { 'Z':z }
 
             for ln, lv in lines.items():
                 valline = {}
                 for side in ['BLUE','RED']:
                     w = (tiv>0.) & (lamRF>lv[side+'_MIN']) & (lamRF<lv[side+'_MAX'])
-                    if w.sum()>10:
-                        valline[side+'_VAR'] = utils.weighted_var(tfl[w],tiv[w])
+                    if w.sum()>50:
+                        model = p_fit_spec(lamRF[w], tfl[w], tiv[w])
+                        valline[side+'_VAR'] = utils.weighted_var(tfl[w]/model-1.,tiv[w])
                         valline[side+'_SNR'] = ( (tfl[w]*tiv[w])**2 ).mean()
                     else:
                         valline[side+'_VAR'] = 0.

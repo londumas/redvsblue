@@ -30,6 +30,9 @@ if __name__ == '__main__':
     parser.add_argument('--lambda-max',type=float,default=7235.,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
+    parser.add_argument('--qso-pca',type=str,default=None,required=True,
+        help='Path to quasar PCA')
+
     parser.add_argument('--mask-file',type=str,default=None,required=False,
         help='Path to file to mask regions in lambda_OBS and lambda_RF. In file each line is: region_name region_min region_max (OBS or RF) [Angstrom]')
 
@@ -54,6 +57,17 @@ if __name__ == '__main__':
     print('zmin = {}'.format(zmin))
     print('zmax = {}'.format(zmax))
 
+    ### Read the quasar PCA
+    h = fitsio.FITS(args.qso_pca)
+    head = h['BASIS_VECTORS'].read_header()
+    ll = sp.asarray(head['CRVAL1']+head['CDELT1']*sp.arange(head['NAXIS1']), dtype=sp.float64)
+    if 'LOGLAM' in head and head['LOGLAM']!=0:
+        ll = 10**ll
+    fl = sp.asarray(h['BASIS_VECTORS'].read(),dtype=sp.float64)
+    fl[0,:] /= fl[0,:].mean()
+    qso_pca = [ interp1d(ll,fl[i,:],fill_value="extrapolate",kind="linear") for i in range(1) ]
+    h.close()
+
     ### Read veto lines:
     veto_lines = read_SDSS_data.get_mask_lines(args.mask_file)
 
@@ -73,7 +87,7 @@ if __name__ == '__main__':
     h.close()
 
     ### Read spectra
-    data = read_SDSS_data.read_SDSS_data(DRQ=args.drq, path_spec=args.in_dir, lines=lines,
+    data = read_SDSS_data.read_SDSS_data(DRQ=args.drq, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,
         zmin=zmin, zmax=zmax, zkey=args.z_key,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,
