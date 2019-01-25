@@ -9,14 +9,15 @@ def main():
 
     ###
     nspec = None
-    path_DR12Q = '$HOME/Data/Catalogs/DR12Q_v2_10.fits'
+    #path_DR12Q = '$HOME/Data/Catalogs/DR12Q_v2_10.fits'
+    path_DR12Q = '$EBOSS_ROOT/qso/DR14Q/DR14Q_v3_1.fits'
     path_spplate = '$BOSS_SPECTRO_REDUX/v5_11_0/'
     mask_file = '$HOME/Run_programs/igmhub/picca_DR16_paper_analysis/dr16-line-sky-mask.txt'
     flux_calib_file = '$HOME/Run_programs/igmhub/picca_DR16_paper_analysis/Delta_calibration/Log/delta_attributes.fits.gz'
     ivar_calib_file = '$HOME/Run_programs/igmhub/picca_DR16_paper_analysis/Delta_calibration2/Log/delta_attributes.fits.gz'
     lambda_min = 3600.
     lambda_max = 7235.
-    zkey = 'Z_VI'
+    zkey = 'Z'
 
     ###
     lines = constants.lines
