@@ -18,7 +18,7 @@ def get_mask_lines(pathLines):
     usr_mask_obs = sp.asarray(usr_mask_obs)
 
     return usr_mask_obs
-def cat_DR12Q(pathData,zmin,zmax,zkey='Z_VI'):
+def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
     """
 
     """
@@ -71,14 +71,14 @@ def read_spec_spplate(p,m,path_spec=None, lambda_min=3600., lambda_max=7235., ve
         iv /= correction[None,:]
 
     return ll, fl, iv
-def read_SDSS_data(path_DR12Q, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+def read_SDSS_data(DRQ, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
 
     """
 
     ### Read quasar catalog
-    catQSO = cat_DR12Q(path_DR12Q,zmin,zmax,zkey)
+    catQSO = read_cat(DRQ,zmin,zmax,zkey)
     print('Found {} quasars'.format(catQSO['Z'].size))
 
     ###
