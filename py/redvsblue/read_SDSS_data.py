@@ -26,12 +26,25 @@ def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
     dic = {}
 
     h = fitsio.FITS(pathData)
-    for k in ['PLATE','MJD','FIBERID','THING_ID']:
+    for k in ['PLATE','MJD','FIBERID','THING_ID','RA','DEC']:
         dic[k] = h[1][k][:]
     dic['Z'] = h[1][zkey][:]
     h.close()
 
-    w = (dic['Z']!=-1.) & (dic['Z']>zmin) & (dic['Z']<zmax)
+    print(" start               : nb object in cat = {}".format(dic['Z'].size) )
+    w = dic['THING_ID']>0
+    print(" and thid>0          : nb object in cat = {}".format(w.sum()) )
+    w &= dic['RA']!=dic['DEC']
+    print(" and ra!=dec         : nb object in cat = {}".format(w.sum()) )
+    w &= dic['RA']!=0.
+    print(" and ra!=0.          : nb object in cat = {}".format(w.sum()) )
+    w &= dic['DEC']!=0.
+    print(" and dec!=0.         : nb object in cat = {}".format(w.sum()) )
+    w &= dic['Z']>0.
+    print(" and z>0.            : nb object in cat = {}".format(w.sum()) )
+
+    w &= (dic['Z']>zmin) & (dic['Z']<zmax)
+    print(" and z in range      : nb object in cat = {}".format(w.sum()) )
     for k in dic.keys():
         dic[k] = dic[k][w]
 
