@@ -6,19 +6,6 @@ from functools import partial
 
 from redvsblue import utils
 
-def get_mask_lines(pathLines):
-
-    usr_mask_obs = []
-    with open(os.path.expandvars(pathLines), 'r') as f:
-        for l in f:
-            if l[0]=='#': continue
-            l = l.split()
-            if l[3]=='OBS':
-                usr_mask_obs += [ [float(l[1]),float(l[2])] ]
-        f.closed
-    usr_mask_obs = sp.asarray(usr_mask_obs)
-
-    return usr_mask_obs
 def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
     """
 

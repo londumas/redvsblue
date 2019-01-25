@@ -4,7 +4,7 @@ import fitsio
 import scipy as sp
 from scipy.interpolate import interp1d
 
-from redvsblue import read_SDSS_data, constants
+from redvsblue import read_SDSS_data, constants, utils
 
 
 if __name__ == '__main__':
@@ -57,34 +57,14 @@ if __name__ == '__main__':
     print('zmin = {}'.format(zmin))
     print('zmax = {}'.format(zmax))
 
-    ### Read the quasar PCA
-    h = fitsio.FITS(args.qso_pca)
-    head = h['BASIS_VECTORS'].read_header()
-    ll = sp.asarray(head['CRVAL1']+head['CDELT1']*sp.arange(head['NAXIS1']), dtype=sp.float64)
-    if 'LOGLAM' in head and head['LOGLAM']!=0:
-        ll = 10**ll
-    fl = sp.asarray(h['BASIS_VECTORS'].read(),dtype=sp.float64)
-    fl[0,:] /= fl[0,:].mean()
-    qso_pca = [ interp1d(ll,fl[i,:],fill_value='extrapolate',kind='linear') for i in range(1) ]
-    h.close()
-
-    ### Read veto lines:
-    veto_lines = read_SDSS_data.get_mask_lines(args.mask_file)
-
-    ### Read flux calib
-    h = fitsio.FITS(args.flux_calib)
-    ll_st = h[1]['LOGLAM'][:]
-    st = h[1]['STACK'][:]
-    w = st!=0.
-    flux_calib = interp1d(ll_st[w],st[w],fill_value='extrapolate',kind='linear')
-    h.close()
-
-    ### Read ivar calib
-    h = fitsio.FITS(args.ivar_calib)
-    ll = h[2]['LOGLAM'][:]
-    eta = h[2]['ETA'][:]
-    ivar_calib = interp1d(ll,eta,fill_value='extrapolate',kind='linear')
-    h.close()
+    ###
+    qso_pca = utils.read_PCA(args.qso_pca)
+    if not args.flux_calib is None:
+        flux_calib = utils.read_flux_calibration(args.flux_calib)
+    if not args.ivar_calib is None:
+        ivar_calib = utils.read_ivar_calibration(args.ivar_calib)
+    if not args.mask_file is None:
+        veto_lines = utils.read_mask_lines(args.mask_file)
 
     ### Read spectra
     data = read_SDSS_data.read_SDSS_data(DRQ=args.drq, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,
@@ -93,7 +73,7 @@ if __name__ == '__main__':
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,
         nspec=args.nspec)
 
-    ###
+    ### Save
     out = fitsio.FITS(args.out,'rw',clobber=True)
     head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'} ]
     dic = {}
