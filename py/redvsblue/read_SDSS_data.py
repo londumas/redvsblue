@@ -150,6 +150,7 @@ def read_SDSS_data(DRQ, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda
                 data[t][ln] = valline
 
         if (not nspec is None) and (len(data.keys())>nspec):
+            print('{}:'.format(len(data.keys())))
             return data
 
     return data

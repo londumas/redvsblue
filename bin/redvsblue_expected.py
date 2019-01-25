@@ -84,6 +84,7 @@ if __name__ == '__main__':
     head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'} ]
     dic = {}
     dic['THING_ID'] = sp.array([ t for t in data.keys() ])
+    dic['Z'] = sp.array([ data[t]['Z'] for t in data.keys() ])
     for ln in lines.keys():
         for side in ['BLUE','RED']:
             dic[ln+'_'+side+'_VAR'] = sp.array([ data[t][ln][side+'_VAR'] for t in data.keys() ])
