@@ -85,9 +85,6 @@ def read_SDSS_data(path_DR12Q, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI',
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
 
-    if nspec is None:
-        nspec = catQSO['Z'].size
-
     pm = catQSO['PLATE']*100000 + catQSO['MJD']
     upm = sp.sort(sp.unique(pm))
     npm = sp.bincount(pm)
@@ -134,7 +131,7 @@ def read_SDSS_data(path_DR12Q, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI',
                         valline[side+'_SNR'] = 0.
                 data[t][ln] = valline
 
-        if len(data.keys())>nspec:
+        if (not nspec is None) and (len(data.keys())>nspec):
             return data
 
     return data
