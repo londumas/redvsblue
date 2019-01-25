@@ -1,4 +1,3 @@
-import os
 import scipy as sp
 import fitsio
 import iminuit
@@ -93,7 +92,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     fmin,_ = mig.migrad()
 
     return mig.values['a0']*model[0]
-def read_SDSS_data(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
 

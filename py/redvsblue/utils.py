@@ -1,3 +1,4 @@
+import os
 import fitsio
 import scipy as sp
 from scipy.interpolate import interp1d
@@ -32,7 +33,7 @@ def read_flux_calibration(path):
 
     """
 
-    h = fitsio.FITS(args.flux_calib)
+    h = fitsio.FITS(path)
     ll_st = h[1]['LOGLAM'][:]
     st = h[1]['STACK'][:]
     w = st!=0.
@@ -42,7 +43,7 @@ def read_flux_calibration(path):
     return flux_calib
 def read_ivar_calibration(path):
 
-    h = fitsio.FITS(args.ivar_calib)
+    h = fitsio.FITS(path)
     ll = h[2]['LOGLAM'][:]
     eta = h[2]['ETA'][:]
     ivar_calib = interp1d(ll,eta,fill_value='extrapolate',kind='linear')

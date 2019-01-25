@@ -67,7 +67,7 @@ if __name__ == '__main__':
         veto_lines = utils.read_mask_lines(args.mask_file)
 
     ### Read spectra
-    data = read_SDSS_data.read_SDSS_data(DRQ=args.drq, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,
+    data = read_SDSS_data.get_VAR_SNR(DRQ=args.drq, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,
         zmin=zmin, zmax=zmax, zkey=args.z_key,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,
