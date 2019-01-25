@@ -8,7 +8,7 @@ from redvsblue import read_SDSS_data, constants
 def main():
 
     ###
-    nspec = 1000
+    nspec = None
     path_DR12Q = '$HOME/Data/Catalogs/DR12Q_v2_10.fits'
     path_spplate = '$BOSS_SPECTRO_REDUX/v5_11_0/'
     mask_file = '$HOME/Run_programs/igmhub/picca_DR16_paper_analysis/dr16-line-sky-mask.txt'
@@ -61,21 +61,6 @@ def main():
         blueSNR = sp.array([ d[ln]['BLUE_SNR'] for d in data.values() ])
 
         sp.savetxt(ln+'_redvsblue.txt',sp.array(list(zip(thid,blueVar,redVar,blueSNR))),fmt='%u %e %e %e')
-
-    '''
-    ###
-    for ln in lines.keys():
-        thid = sp.array([ t for t in data.keys() ])
-        blueVar = sp.array([ d[ln]['BLUE_VAR'] for d in data.values() ])
-        redVar = sp.array([ d[ln]['RED_VAR'] for d in data.values() ])
-        blueSNR = sp.array([ d[ln]['BLUE_SNR'] for d in data.values() ])
-
-        w = (blueVar>0.) & (redVar>0.)
-        plt.errorbar(blueSNR[w], blueVar[w]/redVar[w], fmt='o')
-        plt.title(ln)
-        plt.grid()
-        plt.show()
-    ''' 
 
     return
 

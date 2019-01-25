@@ -36,7 +36,7 @@ def cat_DR12Q(pathData,zmin,zmax,zkey='Z_VI'):
         dic[k] = dic[k][w]
 
     return dic
-def read_spec_spplate(p,m,f,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
+def read_spec_spplate(p,m,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
     """
 
 
@@ -53,22 +53,22 @@ def read_spec_spplate(p,m,f,path_spec=None, lambda_min=3600., lambda_max=7235., 
     if head['DC-FLAG']:
         ll = 10**ll
 
-    w = (iv[f-1,:]>0.) & (ll>lambda_min) & (ll<lambda_max)
+    w = (ll>lambda_min) & (ll<lambda_max)
     if not veto_lines is None:
         for lmin,lmax in veto_lines:
             w &= (ll<lmin) | (ll>lmax)
 
     ll = ll[w]
-    fl = fl[f-1,:][w]
-    iv = iv[f-1,:][w]
+    fl = fl[:,w]
+    iv = iv[:,w]
 
     if not flux_calib is None:
         correction = flux_calib(sp.log10(ll))
-        fl /= correction
-        iv *= correction**2
+        fl /= correction[None,:]
+        iv *= correction[None,:]**2
     if not ivar_calib is None:
         correction = ivar_calib(sp.log10(ll))
-        iv /= correction
+        iv /= correction[None,:]
 
     return ll, fl, iv
 def read_SDSS_data(path_DR12Q, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
@@ -88,29 +88,53 @@ def read_SDSS_data(path_DR12Q, path_spec, lines, zmin=0., zmax=10., zkey='Z_VI',
     if nspec is None:
         nspec = catQSO['Z'].size
 
+    pm = catQSO['PLATE']*100000 + catQSO['MJD']
+    upm = sp.sort(sp.unique(pm))
+    npm = sp.bincount(pm)
+    w = npm>0
+    npm = npm[w]
+    w = sp.argsort(npm)
+    upm = upm[w][::-1]
+    npm = npm[w][::-1]
+
     data = {}
-    for i in range(nspec):
-        t = catQSO['THING_ID'][i]
-        p = catQSO['PLATE'][i]
-        m = catQSO['MJD'][i]
-        f = catQSO['FIBERID'][i]
-        z = catQSO['Z'][i]
+    for tpm in upm:
+        p = tpm//100000
+        m = tpm%100000
+        w = pm==tpm
 
-        lam, fl, iv = p_read_spec_spplate(p,m,f)
-        lamRF = lam/(1.+z)
+        lam, fl, iv = p_read_spec_spplate(p,m)
+        print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
 
-        data[t] = { 'Z':z }
+        thids = catQSO['THING_ID'][w]
+        fibs = catQSO['FIBERID'][w]
+        zs = catQSO['Z'][w]
 
-        for ln, lv in lines.items():
-            valline = {}
-            for side in ['BLUE','RED']:
-                w = (lamRF>lv[side+'_MIN']) & (lamRF<lv[side+'_MAX'])
-                if w.sum()>10:
-                    valline[side+'_VAR'] = utils.weighted_var(fl[w],iv[w])
-                    valline[side+'_SNR'] = ( (fl[w]*iv[w])**2 ).mean()
-                else:
-                    valline[side+'_VAR'] = 0.
-                    valline[side+'_SNR'] = 0.
-            data[t][ln] = valline
+        for i in range(w.sum()):
+
+            t = thids[i]
+            f = fibs[i]
+            z = zs[i]
+
+            tfl = fl[f-1]
+            tiv = iv[f-1]
+            lamRF = lam/(1.+z)
+
+            data[t] = { 'Z':z }
+
+            for ln, lv in lines.items():
+                valline = {}
+                for side in ['BLUE','RED']:
+                    w = (tiv>0.) & (lamRF>lv[side+'_MIN']) & (lamRF<lv[side+'_MAX'])
+                    if w.sum()>10:
+                        valline[side+'_VAR'] = utils.weighted_var(tfl[w],tiv[w])
+                        valline[side+'_SNR'] = ( (tfl[w]*tiv[w])**2 ).mean()
+                    else:
+                        valline[side+'_VAR'] = 0.
+                        valline[side+'_SNR'] = 0.
+                data[t][ln] = valline
+
+        if len(data.keys())>nspec:
+            return data
 
     return data
