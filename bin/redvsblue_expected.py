@@ -65,7 +65,7 @@ if __name__ == '__main__':
         ll = 10**ll
     fl = sp.asarray(h['BASIS_VECTORS'].read(),dtype=sp.float64)
     fl[0,:] /= fl[0,:].mean()
-    qso_pca = [ interp1d(ll,fl[i,:],fill_value="extrapolate",kind="linear") for i in range(1) ]
+    qso_pca = [ interp1d(ll,fl[i,:],fill_value='extrapolate',kind='linear') for i in range(1) ]
     h.close()
 
     ### Read veto lines:
@@ -73,17 +73,17 @@ if __name__ == '__main__':
 
     ### Read flux calib
     h = fitsio.FITS(args.flux_calib)
-    ll_st = h[1]['loglam'][:]
-    st = h[1]['stack'][:]
+    ll_st = h[1]['LOGLAM'][:]
+    st = h[1]['STACK'][:]
     w = st!=0.
-    flux_calib = interp1d(ll_st[w],st[w],fill_value="extrapolate",kind="linear")
+    flux_calib = interp1d(ll_st[w],st[w],fill_value='extrapolate',kind='linear')
     h.close()
 
     ### Read ivar calib
     h = fitsio.FITS(args.ivar_calib)
     ll = h[2]['LOGLAM'][:]
     eta = h[2]['ETA'][:]
-    ivar_calib = interp1d(ll,eta,fill_value="extrapolate",kind="linear")
+    ivar_calib = interp1d(ll,eta,fill_value='extrapolate',kind='linear')
     h.close()
 
     ### Read spectra
