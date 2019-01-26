@@ -107,7 +107,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
     a0 = abs(flux.mean())
     mig = iminuit.Minuit(chi2,a0=a0,error_a0=a0/2.,errordef=1.,print_level=-1)
-    fmin,_ = mig.migrad()
+    mig.migrad()
 
     return mig.values['a0']*model[0]
 def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
