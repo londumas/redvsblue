@@ -1,8 +1,18 @@
 import os
+import sys
 import fitsio
 import scipy as sp
 from scipy.interpolate import interp1d
 
+try:
+    import __builtin__
+except ImportError:
+    import builtins as __builtin__
+
+
+def print(*args, **kwds):
+    __builtin__.print(*args,**kwds)
+    sys.stdout.flush()
 def weighted_var(values, weights):
     """
     https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy

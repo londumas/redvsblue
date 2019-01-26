@@ -1,9 +1,11 @@
+from __future__ import print_function
 import scipy as sp
 import fitsio
 import iminuit
 from functools import partial
 
 from redvsblue import utils, constants
+from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
 
 counter = None
@@ -37,20 +39,18 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
     for k in dic.keys():
         dic[k] = dic[k][w]
 
-    w = sp.ones(dic['Z'].size,dtype=bool)
+    w = dic['Z']!=-1.
     if unique:
         w &= dic['THING_ID']>0
         w &= dic['RA']!=dic['DEC']
         w &= dic['RA']!=0.
         w &= dic['DEC']!=0.
-        w &= dic['Z']>0.
     if not zmin is None:
         w &= dic['Z']>zmin
     if not zmax is None:
         w &= dic['Z']<zmax
-    if w.sum()!=w.size:
-        for k in dic.keys():
-            dic[k] = dic[k][w]
+    for k in dic.keys():
+        dic[k] = dic[k][w]
 
     if unique:
         _, w = sp.unique(dic['THING_ID'], return_index=True)
@@ -298,6 +298,9 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                     valline['Z'], valline['ZERR'], zwarn, valline['CHI2'], valline['DCHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
                     if not zwarn:
                         valline['ZWARN'] |= ZW.BAD_MINFIT
+                    if sp.isnan(valline['ZERR']):
+                        valline['ZWARN'] |= ZW.BAD_MINFIT
+                        valline['ZERR'] = -1.
                     if valline['DCHI2']<min_deltachi2:
                         valline['ZWARN'] |= ZW.SMALL_DELTA_CHI2
                 else:
