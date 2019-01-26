@@ -2,7 +2,6 @@
 import argparse
 import fitsio
 import scipy as sp
-from scipy.interpolate import interp1d
 
 from redvsblue import read_SDSS_data, constants, utils
 
