@@ -12,6 +12,18 @@ def weighted_var(values, weights):
     var = sp.average((values-m)**2, weights=weights)
 
     return var
+def get_dv(z, zref):
+
+    c = 299792458./1000.
+    dv = c*(z-zref)/(1.+zref)
+
+    return dv
+def get_dz(dv, zref):
+
+    c = 299792458./1000.
+    dz = (1.+zref)*dv/c
+
+    return dz
 def read_PCA(path,dim=False):
     """
 

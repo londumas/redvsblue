@@ -92,7 +92,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     fmin,_ = mig.migrad()
 
     return mig.values['a0']*model[0]
-def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None):
+def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
 
     def chi2(zl,a0,a1,a2,a3):
         par = sp.array([a0,a1,a2,a3])
@@ -102,8 +102,10 @@ def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None):
         return (y**2*ivar).sum()
 
     a0 = abs(flux.mean())
+    dz = utils.get_dz(dv_prior,z)
+    limit_zl = (z-dz/2.,z+dz/2.)
     mig = iminuit.Minuit(chi2,
-        zl=z,error_zl=0.01,
+        zl=z,error_zl=0.01,limit_zl=limit_zl,
         a0=a0,error_a0=a0/2.,
         a1=0.,error_a1=0.1,
         a2=0.,error_a2=0.1,
@@ -190,7 +192,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
             return data
 
     return data
-def fit_line(DRQ, path_spec, lines, qso_pca, zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None, dwave_side=100):
     """
 
@@ -204,7 +206,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, zkey='Z_VI', lambda_min=3600., lamb
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
 
-    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca)
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_prior=dv_prior)
 
     ### Sort PLATE-MJD
     pm = catQSO['PLATE']*100000 + catQSO['MJD']
@@ -234,6 +236,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, zkey='Z_VI', lambda_min=3600., lamb
         zs = catQSO['Z'][w]
 
         for i in range(w.sum()):
+            print(i)
 
             t = thids[i]
             f = fibs[i]
