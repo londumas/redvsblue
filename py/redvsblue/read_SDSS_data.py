@@ -5,7 +5,15 @@ from functools import partial
 
 from redvsblue import utils
 
-def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
+def platemjdfiber2targetid(plate, mjd, fiber):
+    return plate*1000000000 + mjd*10000 + fiber
+def targetid2platemjdfiber(targetid):
+    fiber = targetid % 10000
+    mjd = (targetid // 10000) % 100000
+    plate = (targetid // (10000 * 100000))
+    return (plate, mjd, fiber)
+
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
     """
 
     """
@@ -17,28 +25,38 @@ def read_cat(pathData,zmin,zmax,zkey='Z_VI'):
         dic[k] = h[1][k][:]
     dic['Z'] = h[1][zkey][:]
     h.close()
+    dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
+    print('Found {} quasars'.format(dic['Z'].size))
 
-    print(' start               : nb object in cat = {}'.format(dic['Z'].size) )
-    w = dic['THING_ID']>0
-    print(' and thid>0          : nb object in cat = {}'.format(w.sum()) )
-    w &= dic['RA']!=dic['DEC']
-    print(' and ra!=dec         : nb object in cat = {}'.format(w.sum()) )
-    w &= dic['RA']!=0.
-    print(' and ra!=0.          : nb object in cat = {}'.format(w.sum()) )
-    w &= dic['DEC']!=0.
-    print(' and dec!=0.         : nb object in cat = {}'.format(w.sum()) )
-    w &= dic['Z']>0.
-    print(' and z>0.            : nb object in cat = {}'.format(w.sum()) )
-
-    w &= (dic['Z']>zmin) & (dic['Z']<zmax)
-    print(' and z in range      : nb object in cat = {}'.format(w.sum()) )
+    w = sp.argsort(dic['TARGETID'])
     for k in dic.keys():
         dic[k] = dic[k][w]
 
-    unique, w = sp.unique(dic['THING_ID'], return_index=True)
-    print('Unique: {}'.format(w.size))
+    w = sp.ones(dic['Z'].size,dtype=bool)
+    if unique:
+        w &= dic['THING_ID']>0
+        w &= dic['RA']!=dic['DEC']
+        w &= dic['RA']!=0.
+        w &= dic['DEC']!=0.
+        w &= dic['Z']>0.
+    if not zmin is None:
+        w &= dic['Z']>zmin
+    if not zmax is None:
+        w &= dic['Z']<zmax
+    if w.sum()!=w.size:
+        for k in dic.keys():
+            dic[k] = dic[k][w]
+
+    print(dic['PLATE'].min())
+    w = dic['PLATE']<300
     for k in dic.keys():
         dic[k] = dic[k][w]
+
+    if unique:
+        _, w = sp.unique(dic['THING_ID'], return_index=True)
+        print('Unique: {}'.format(w.size))
+        for k in dic.keys():
+            dic[k] = dic[k][w]
 
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
@@ -46,11 +64,11 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=3600., lambda_ma
 
 
     """
-    path = path_spec+'/{}/spPlate-{}-{}.fits'.format(p,p,m)
+    path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
 
     h = fitsio.FITS(path)
     fl = h[0].read()
-    iv = h['IVAR'].read()*(h['ANDMASK'].read()==0)
+    iv = h[1].read()*(h[2].read()==0)
     head = h[0].read_header()
     h.close()
 
@@ -136,7 +154,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
     p_fit_spec = partial(fit_spec, qso_pca=qso_pca)
 
     ### Sort PLATE-MJD
-    pm = catQSO['PLATE']*100000 + catQSO['MJD']
+    pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
     npm = sp.bincount(pm)
     w = npm>0
@@ -199,7 +217,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3
     """
 
     ### Read quasar catalog
-    catQSO = read_cat(DRQ,zmin=0.,zmax=10.,zkey=zkey)
+    catQSO = read_cat(DRQ,zkey=zkey,unique=False)
     print('Found {} quasars'.format(catQSO['Z'].size))
 
     ###
@@ -209,7 +227,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3
     p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_prior=dv_prior)
 
     ### Sort PLATE-MJD
-    pm = catQSO['PLATE']*100000 + catQSO['MJD']
+    pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
     npm = sp.bincount(pm)
     w = npm>0
@@ -227,11 +245,12 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3
         try:
             lam, fl, iv = p_read_spec_spplate(p,m)
         except OSError:
-            print('WARNING: Can not find PLATE={}, MJD={}'.format(p,m))
+            path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
+            print('WARNING: Can not find PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
         print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
 
-        thids = catQSO['THING_ID'][w]
+        thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
 
