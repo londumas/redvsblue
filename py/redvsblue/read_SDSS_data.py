@@ -3,7 +3,8 @@ import fitsio
 import iminuit
 from functools import partial
 
-from redvsblue import utils, ZWarningMask, constants
+from redvsblue import utils, constants
+from redvsblue.zwarning import ZWarningMask as ZW
 
 def platemjdfiber2targetid(plate, mjd, fiber):
     return plate*1000000000 + mjd*10000 + fiber
@@ -294,18 +295,18 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=N
                 if valline['NPIX']>0:
                     valline['Z'], valline['ZERR'], zwarn, valline['CHI2'], valline['DCHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
                     if not zwarn:
-                        valline['ZWARN'] |= ZWarningMask.BAD_MINFIT
+                        valline['ZWARN'] |= ZW.BAD_MINFIT
                     if valline['DCHI2']<min_deltachi2:
-                        valline['ZWARN'] |= BAD_MINFIT.SMALL_DELTA_CHI2
+                        valline['ZWARN'] |= ZW.SMALL_DELTA_CHI2
                 else:
-                    valline['ZWARN'] |= BAD_MINFIT.NODATA
+                    valline['ZWARN'] |= ZW.NODATA
 
                 if valline['NPIXBLUE']==0:
-                    valline['ZWARN'] |= BAD_MINFIT.NODATA_BLUE
+                    valline['ZWARN'] |= ZW.NODATA_BLUE
                 if valline['NPIXRED']==0:
-                    valline['ZWARN'] |= BAD_MINFIT.NODATA_RED
+                    valline['ZWARN'] |= ZW.NODATA_RED
                 if valline['NPIXBLUE']<min_pix | valline['NPIXRED']<min_pix:
-                    valline['ZWARN'] |= BAD_MINFIT.LITTLE_COVERAGE
+                    valline['ZWARN'] |= ZW.LITTLE_COVERAGE
 
                 data[t][ln] = valline
 
