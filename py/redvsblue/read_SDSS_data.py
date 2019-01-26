@@ -225,17 +225,13 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
             return data
 
     return data
-def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=None, lambda_max=None,
-    veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None, dwave_side=100, min_pix=5):
+def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, min_pix=5):
     """
 
     """
 
     min_deltachi2 = constants.min_deltachi2
-
-    ### Read quasar catalog
-    catQSO = read_cat(DRQ,zkey=zkey,unique=False)
-    print('Found {} quasars'.format(catQSO['Z'].size))
 
     ###
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
@@ -272,7 +268,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=N
         zs = catQSO['Z'][w]
 
         for i in range(w.sum()):
-            print(i+len(data.keys()))
+            print('Computing: ',len(data.keys()))
 
             t = thids[i]
             f = fibs[i]
@@ -309,9 +305,5 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=N
                     valline['ZWARN'] |= ZW.LITTLE_COVERAGE
 
                 data[t][ln] = valline
-
-        if not nspec is None and len(data.keys())>nspec:
-            print('{}:'.format(len(data.keys())))
-            return data
 
     return data

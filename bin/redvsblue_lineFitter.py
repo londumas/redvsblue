@@ -2,6 +2,9 @@
 import argparse
 import fitsio
 import scipy as sp
+import copy
+from functools import partial
+from multiprocessing import Pool,Lock,cpu_count,Value
 
 from redvsblue import read_SDSS_data, constants, utils
 
@@ -50,7 +53,12 @@ if __name__ == '__main__':
     parser.add_argument('--nspec', type=int, default=None, required=False,
         help='Maximum number of spectra to read')
 
+    parser.add_argument('--nproc', type=int, default=None, required=False,
+        help='Number of processors')
+
     args = parser.parse_args()
+    if args.nproc is None:
+        args.nproc = cpu_count()//2
 
     ###
     lines = constants.emissionLines
@@ -64,11 +72,37 @@ if __name__ == '__main__':
     if not args.mask_file is None:
         args.mask_file = utils.read_mask_lines(args.mask_file)
 
+    ### Read quasar catalog
+    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key,unique=False)
+    print('Found {} quasars'.format(catQSO['Z'].size))
+
+    if not args.nspec is None and args.nspec<catQSO['Z'].size:
+        for k in catQSO.keys():
+            catQSO[k] = catQSO[k][:args.nspec]
+        print('Limit to {} quasars'.format(catQSO['Z'].size))
+
     ### Read spectra
-    data = read_SDSS_data.fit_line(DRQ=args.drq, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
-        zkey=args.z_key, lambda_min=args.lambda_min, lambda_max=args.lambda_max,
+    p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
+        lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
-        nspec=args.nspec, dwave_side=args.dwave_side)
+        dwave_side=args.dwave_side, min_pix=5)
+
+    cpu_data = {}
+    pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
+    upm = sp.sort(sp.unique(pm))
+    for tupm in upm:
+        w = pm==tupm
+        cpu_data[tupm] = copy.deepcopy(catQSO)
+        for k in cpu_data[tupm].keys():
+            cpu_data[tupm][k] = cpu_data[tupm][k][w]
+    pool = Pool(processes=args.nproc)
+    tdata = pool.map(p_fit_line,cpu_data.values())
+    pool.close()
+
+    data = tdata[0]
+    for td in tdata[1:]:
+        for t in td.keys():
+            data[t] = td[t]
 
     ### Save
     out = fitsio.FITS(args.out,'rw',clobber=True)
