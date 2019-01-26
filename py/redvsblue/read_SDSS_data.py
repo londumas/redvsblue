@@ -6,6 +6,10 @@ from functools import partial
 from redvsblue import utils, constants
 from redvsblue.zwarning import ZWarningMask as ZW
 
+counter = None
+lock = None
+ndata = None
+
 def platemjdfiber2targetid(plate, mjd, fiber):
     return plate*1000000000 + mjd*10000 + fiber
 def targetid2platemjdfiber(targetid):
@@ -261,14 +265,16 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
             print('WARNING: Can not find PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
-        print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
+        #print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
 
         thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
 
         for i in range(w.sum()):
-            print('Computing: ',len(data.keys()))
+            print("\rcomputing xi: {}%".format(round(counter.value*100./ndata,2)),end="")
+            with lock:
+                counter.value += 1
 
             t = thids[i]
             f = fibs[i]

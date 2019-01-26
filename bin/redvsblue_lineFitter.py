@@ -87,6 +87,7 @@ if __name__ == '__main__':
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, min_pix=5)
 
+    ###
     cpu_data = {}
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
@@ -95,6 +96,9 @@ if __name__ == '__main__':
         cpu_data[tupm] = copy.deepcopy(catQSO)
         for k in cpu_data[tupm].keys():
             cpu_data[tupm][k] = cpu_data[tupm][k][w]
+    read_SDSS_data.ndata = catQSO['Z'].size
+    read_SDSS_data.counter = Value('i',0)
+    read_SDSS_data.lock = Lock()
     pool = Pool(processes=args.nproc)
     tdata = pool.map(p_fit_line,cpu_data.values())
     pool.close()
