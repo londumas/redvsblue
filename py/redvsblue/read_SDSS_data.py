@@ -47,11 +47,6 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
         for k in dic.keys():
             dic[k] = dic[k][w]
 
-    print(dic['PLATE'].min())
-    w = dic['PLATE']<300
-    for k in dic.keys():
-        dic[k] = dic[k][w]
-
     if unique:
         _, w = sp.unique(dic['THING_ID'], return_index=True)
         print('Unique: {}'.format(w.size))
@@ -59,7 +54,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
             dic[k] = dic[k][w]
 
     return dic
-def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=3600., lambda_max=7235., veto_lines=None, flux_calib=None, ivar_calib=None):
+def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max=None, veto_lines=None, flux_calib=None, ivar_calib=None):
     """
 
 
@@ -76,7 +71,11 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=3600., lambda_ma
     if head['DC-FLAG']:
         ll = 10**ll
 
-    w = (ll>lambda_min) & (ll<lambda_max)
+    w = sp.ones(ll.size,dtype=bool)
+    if not lambda_min is None:
+        w &= ll>lambda_min
+    if not lambda_max is None:
+        w &= ll<lambda_min
     if not veto_lines is None:
         for lmin,lmax in veto_lines:
             w &= (ll<lmin) | (ll>lmax)
@@ -111,6 +110,9 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
     return mig.values['a0']*model[0]
 def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
+    """
+
+    """
 
     def chi2(zl,a0,a1,a2,a3):
         par = sp.array([a0,a1,a2,a3])
@@ -134,9 +136,21 @@ def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
     z = mig.values['zl']
     zerr = mig.errors['zl']
     zwarn = mig.get_fmin()['is_valid']
-    chi2 = mig.get_fmin()['fval']
+    fval = mig.get_fmin()['fval']
 
-    return z, zerr, zwarn, chi2
+    model = sp.ones(flux.size)
+    def chi2(a0):
+        y = flux-a0*model
+        return (y**2*ivar).sum()
+
+    a0 = abs(flux.mean())
+    mig = iminuit.Minuit(chi2,
+        a0=a0,error_a0=a0/2.,
+        errordef=1.,print_level=-1)
+    mig.migrad()
+    deltachi2 = mig.get_fmin()['fval']-fval
+
+    return z, zerr, zwarn, fval, deltachi2
 def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
@@ -205,12 +219,12 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
                         valline[side+'_SNR'] = 0.
                 data[t][ln] = valline
 
-        if (not nspec is None) and (len(data.keys())>nspec):
+        if not nspec is None and len(data.keys())>nspec:
             print('{}:'.format(len(data.keys())))
             return data
 
     return data
-def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None, dwave_side=100):
     """
 
@@ -268,7 +282,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3
 
             for ln, lv in lines.items():
 
-                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'NPIXBLUE':0., 'NPIXRED':0., 'NPIX':0.}
+                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'NPIXBLUE':0., 'NPIXRED':0., 'NPIX':0., 'DCHI2':0.}
 
                 valline['NPIXBLUE'] = ( (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
                 valline['NPIXRED'] = ( (tiv>0.) & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
@@ -276,7 +290,7 @@ def fit_line(DRQ, path_spec, lines, qso_pca, dv_prior, zkey='Z_VI', lambda_min=3
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>0:
-                    valline['Z'], valline['ZERR'], zwarn, valline['CHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
+                    valline['Z'], valline['ZERR'], zwarn, valline['CHI2'], valline['DCHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
                     if not zwarn:
                         valline['ZWARN'] |= 2**10
                 else:
