@@ -1,4 +1,4 @@
-### Absorber names and wavelengths [Angstrom]
+min_deltachi2 = 9.
 lines = {
     'MgII' : {'LINE':2796.3511, 'BLUE_MIN':2600., 'BLUE_MAX':2760., 'RED_MIN':2900. , 'RED_MAX':3120.},
     'CIV'  : {'LINE':1548.2049, 'BLUE_MIN':1420., 'BLUE_MAX':1520., 'RED_MIN':1600.,  'RED_MAX':1700. },
