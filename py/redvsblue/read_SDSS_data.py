@@ -92,6 +92,31 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     fmin,_ = mig.migrad()
 
     return mig.values['a0']*model[0]
+def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None):
+
+    def chi2(zl,a0,a1,a2,a3):
+        par = sp.array([a0,a1,a2,a3])
+        model = sp.array([ el(lam/(1.+zl)) for el in qso_pca ])
+        model = (model*par[:,None]).sum(axis=0)
+        y = flux-model
+        return (y**2*ivar).sum()
+
+    a0 = abs(flux.mean())
+    mig = iminuit.Minuit(chi2,
+        zl=z,error_zl=0.01,
+        a0=a0,error_a0=a0/2.,
+        a1=0.,error_a1=0.1,
+        a2=0.,error_a2=0.1,
+        a3=0.,error_a3=0.1,
+        errordef=1.,print_level=-1)
+    mig.migrad()
+
+    z = mig.values['zl']
+    zerr = mig.errors['zl']
+    zwarn = mig.get_fmin()['is_valid']
+    chi2 = mig.get_fmin()['fval']
+
+    return z, zerr, zwarn, chi2
 def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
@@ -150,7 +175,8 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
                 valline = {}
                 for side in ['BLUE','RED']:
                     w = (tiv>0.) & (lamRF>lv[side+'_MIN']) & (lamRF<lv[side+'_MAX'])
-                    if w.sum()>50:
+                    valline[side+'_NB'] = w.sum()
+                    if w.sum()>=2:
                         model = p_fit_spec(lamRF[w], tfl[w], tiv[w])
                         valline[side+'_VAR'] = utils.weighted_var(tfl[w]/model-1.,tiv[w])
                         valline[side+'_SNR'] = ( (tfl[w]*tiv[w])**2 ).mean()
@@ -160,6 +186,90 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
                 data[t][ln] = valline
 
         if (not nspec is None) and (len(data.keys())>nspec):
+            print('{}:'.format(len(data.keys())))
+            return data
+
+    return data
+def fit_line(DRQ, path_spec, lines, qso_pca, zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
+    veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None, dwave_side=100):
+    """
+
+    """
+
+    ### Read quasar catalog
+    catQSO = read_cat(DRQ,zmin=0.,zmax=10.,zkey=zkey)
+    print('Found {} quasars'.format(catQSO['Z'].size))
+
+    ###
+    p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
+        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
+
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca)
+
+    ### Sort PLATE-MJD
+    pm = catQSO['PLATE']*100000 + catQSO['MJD']
+    upm = sp.sort(sp.unique(pm))
+    npm = sp.bincount(pm)
+    w = npm>0
+    npm = npm[w]
+    w = sp.argsort(npm)
+    upm = upm[w][::-1]
+    npm = npm[w][::-1]
+
+    data = {}
+    for tpm in upm:
+        p = tpm//100000
+        m = tpm%100000
+        w = pm==tpm
+
+        try:
+            lam, fl, iv = p_read_spec_spplate(p,m)
+        except OSError:
+            print('WARNING: Can not find PLATE={}, MJD={}'.format(p,m))
+            continue
+        print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
+
+        thids = catQSO['THING_ID'][w]
+        fibs = catQSO['FIBERID'][w]
+        zs = catQSO['Z'][w]
+
+        for i in range(w.sum()):
+
+            t = thids[i]
+            f = fibs[i]
+            z = zs[i]
+
+            tfl = fl[f-1]
+            tiv = iv[f-1]
+            lamRF = lam/(1.+z)
+            data[t] = { 'ZPRIOR':z }
+
+            for ln, lv in lines.items():
+
+                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'NPIXBLUE':0., 'NPIXRED':0., 'NPIX':0.}
+
+                valline['NPIXBLUE'] = ( (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
+                valline['NPIXRED'] = ( (tiv>0.) & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
+                w = (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
+                valline['NPIX'] = w.sum()
+
+                if valline['NPIX']>0:
+                    valline['Z'], valline['ZERR'], zwarn, valline['CHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
+                    if not zwarn:
+                        valline['ZWARN'] |= 2**10
+                else:
+                    valline['ZWARN'] |= 2**9
+
+                if valline['NPIXBLUE']==0:
+                    valline['ZWARN'] |= 2**11
+                if valline['NPIXRED']==0:
+                    valline['ZWARN'] |= 2**12
+                if valline['NPIXBLUE']<5 | valline['NPIXRED']<5:
+                    valline['ZWARN'] |= 2**1
+
+                data[t][ln] = valline
+
+        if not nspec is None and len(data.keys())>nspec:
             print('{}:'.format(len(data.keys())))
             return data
 

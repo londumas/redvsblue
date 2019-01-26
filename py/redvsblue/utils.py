@@ -12,7 +12,7 @@ def weighted_var(values, weights):
     var = sp.average((values-m)**2, weights=weights)
 
     return var
-def read_PCA(path):
+def read_PCA(path,dim=False):
     """
 
     """
@@ -24,7 +24,11 @@ def read_PCA(path):
         ll = 10**ll
     fl = sp.asarray(h['BASIS_VECTORS'].read(),dtype=sp.float64)
     fl[0,:] /= fl[0,:].mean()
-    qso_pca = [ interp1d(ll,fl[i,:],fill_value='extrapolate',kind='linear') for i in range(1) ]
+    if not dim:
+        dim = 1
+    else:
+        dim = fl.shape[0]
+    qso_pca = [ interp1d(ll,fl[i,:],fill_value='extrapolate',kind='linear') for i in range(dim) ]
     h.close()
 
     return qso_pca

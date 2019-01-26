@@ -81,7 +81,7 @@ if __name__ == '__main__':
     dic['Z'] = sp.array([ data[t]['Z'] for t in data.keys() ])
     for ln in lines.keys():
         for side in ['BLUE','RED']:
-            dic[ln+'_'+side+'_VAR'] = sp.array([ data[t][ln][side+'_VAR'] for t in data.keys() ])
-            dic[ln+'_'+side+'_SNR'] = sp.array([ data[t][ln][side+'_SNR'] for t in data.keys() ])
+            for k in ['NB','VAR','SNR']:
+                dic[ln+'_'+side+'_'+k] = sp.array([ data[t][ln][side+'_'+k] for t in data.keys() ])
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
     out.close()
