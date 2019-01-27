@@ -4,7 +4,7 @@ import fitsio
 import iminuit
 from functools import partial
 
-from redvsblue import utils, constants
+from redvsblue import utils
 from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
 
@@ -230,12 +230,10 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
-    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, min_pix=5):
+    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100):
     """
 
     """
-
-    min_deltachi2 = constants.min_deltachi2
 
     ###
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
@@ -287,31 +285,19 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             for ln, lv in lines.items():
 
-                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'NPIXBLUE':0., 'NPIXRED':0., 'NPIX':0., 'DCHI2':0.}
+                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'DCHI2':0., 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
 
-                valline['NPIXBLUE'] = ( (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
-                valline['NPIXRED'] = ( (tiv>0.) & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
-                w = (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
+                w = tiv>0.
+                if not ln=='PCA':
+                    valline['NPIXBLUE'] = ( (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
+                    valline['NPIXRED'] = ( (tiv>0.) & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
+                    w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>0:
                     valline['Z'], valline['ZERR'], zwarn, valline['CHI2'], valline['DCHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
                     if not zwarn:
                         valline['ZWARN'] |= ZW.BAD_MINFIT
-                    if sp.isnan(valline['ZERR']):
-                        valline['ZWARN'] |= ZW.BAD_MINFIT
-                        valline['ZERR'] = -1.
-                    if valline['DCHI2']<min_deltachi2:
-                        valline['ZWARN'] |= ZW.SMALL_DELTA_CHI2
-                else:
-                    valline['ZWARN'] |= ZW.NODATA
-
-                if valline['NPIXBLUE']==0:
-                    valline['ZWARN'] |= ZW.NODATA_BLUE
-                if valline['NPIXRED']==0:
-                    valline['ZWARN'] |= ZW.NODATA_RED
-                if valline['NPIXBLUE']<min_pix | valline['NPIXRED']<min_pix:
-                    valline['ZWARN'] |= ZW.LITTLE_COVERAGE
 
                 data[t][ln] = valline
 

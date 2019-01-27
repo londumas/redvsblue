@@ -7,6 +7,7 @@ from functools import partial
 from multiprocessing import Pool,Lock,cpu_count,Value
 
 from redvsblue import read_SDSS_data, constants, utils
+from redvsblue.zwarning import ZWarningMask as ZW
 
 
 if __name__ == '__main__':
@@ -34,6 +35,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--dwave-side',type=int,default=100,required=False,
         help='Wavelength interval on both side of the line [Angstrom]')
+
+    parser.add_argument('--npix-min',type=int,default=5,required=False,
+        help='Minimum number of pixels on each side of the line')
 
     parser.add_argument('--dv-prior',type=float,default=20000.,required=False,
         help='Velocity difference box prior [km/s]')
@@ -85,7 +89,7 @@ if __name__ == '__main__':
     p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
-        dwave_side=args.dwave_side, min_pix=5)
+        dwave_side=args.dwave_side)
 
     ###
     cpu_data = {}
@@ -123,8 +127,27 @@ if __name__ == '__main__':
         dic = {}
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
-        for k in ['Z','ZERR','ZWARN','CHI2','NPIXBLUE','NPIXRED','NPIX','DCHI2']:
+        for k in ['Z','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
+
+        w = sp.isnan(dic['ZERR'])
+        dic['ZWARN'][w] |= ZW.BAD_MINFIT
+        dic['ZERR'][w] = -1.
+
+        w = dic['DCHI2']<constants.min_deltachi2
+        dic['ZWARN'][w] |= ZW.SMALL_DELTA_CHI2
+
+        w = dic['NPIX']==0.
+        dic['ZWARN'][w] |= ZW.NODATA
+
+        if not ln=='PCA':
+            w = dic['NPIXBLUE']==0
+            dic['ZWARN'][w] |= ZW.NODATA_BLUE
+            w = dic['NPIXRED']==0
+            dic['ZWARN'][w] |= ZW.NODATA_RED
+            w = (dic['NPIXBLUE']<args.npix_min) | (dic['NPIXRED']<args.npix_min)
+            dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
+
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 
     out.close()
