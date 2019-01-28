@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--lambda-max',type=float,default=None,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
-    parser.add_argument('--dwave-side',type=int,default=100,required=False,
+    parser.add_argument('--dwave-side',type=int,default=85,required=False,
         help='Wavelength interval on both side of the line [Angstrom]')
 
     parser.add_argument('--npix-min',type=int,default=5,required=False,
