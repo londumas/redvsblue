@@ -61,10 +61,12 @@ def read_flux_calibration(path):
     """
 
     h = fitsio.FITS(path)
-    ll_st = h[1]['LOGLAM'][:]
+    ll = h[1]['LOGLAM'][:]
     st = h[1]['STACK'][:]
-    w = st!=0.
-    flux_calib = interp1d(ll_st[w],st[w],fill_value='extrapolate',kind='linear')
+    wst = h[1]['WEIGHT'][:]
+    w = (st==0.) | (wst<=10.) | (st<0.8) | (st>1.2)
+    st[w] = 1.
+    flux_calib = interp1d(10**ll,st,fill_value='extrapolate',kind='linear')
     h.close()
 
     return flux_calib
@@ -73,7 +75,7 @@ def read_ivar_calibration(path):
     h = fitsio.FITS(path)
     ll = h[2]['LOGLAM'][:]
     eta = h[2]['ETA'][:]
-    ivar_calib = interp1d(ll,eta,fill_value='extrapolate',kind='linear')
+    ivar_calib = interp1d(10**ll,eta,fill_value='extrapolate',kind='linear')
     h.close()
 
     return ivar_calib

@@ -90,11 +90,11 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max
     iv = iv[:,w]
 
     if not flux_calib is None:
-        correction = flux_calib(sp.log10(ll))
+        correction = flux_calib(ll)
         fl /= correction[None,:]
         iv *= correction[None,:]**2
     if not ivar_calib is None:
-        correction = ivar_calib(sp.log10(ll))
+        correction = ivar_calib(ll)
         iv /= correction[None,:]
 
     if not fiber is None:
