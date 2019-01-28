@@ -39,8 +39,8 @@ if __name__ == '__main__':
     parser.add_argument('--npix-min',type=int,default=5,required=False,
         help='Minimum number of pixels on each side of the line')
 
-    parser.add_argument('--dv-prior',type=float,default=20000.,required=False,
-        help='Velocity difference box prior [km/s]')
+    parser.add_argument('--dv-prior',type=float,default=10000.,required=False,
+        help='Velocity difference box prior for each side of the line [km/s]')
 
     parser.add_argument('--qso-pca',type=str,default=None,required=True,
         help='Path to quasar PCA')
@@ -117,7 +117,9 @@ if __name__ == '__main__':
 
     head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
             {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [Angstrom]'},
-            {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior [km/s]'},]
+            {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior on both side of the line [km/s]'},
+            {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
+            ]
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])

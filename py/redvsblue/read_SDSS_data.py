@@ -128,9 +128,9 @@ def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
 
     a0 = abs(flux.mean())
     dz = utils.get_dz(dv_prior,z)
-    limit_zl = (z-dz/2.,z+dz/2.)
+    limit_zl = (z-dz,z+dz)
     mig = iminuit.Minuit(chi2,
-        zl=z,error_zl=0.01,limit_zl=limit_zl,
+        zl=z,error_zl=dz/2.,limit_zl=limit_zl,
         a0=a0,error_a0=a0/2.,
         a1=0.,error_a1=0.1,
         a2=0.,error_a2=0.1,
