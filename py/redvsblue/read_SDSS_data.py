@@ -39,7 +39,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
     for k in dic.keys():
         dic[k] = dic[k][w]
 
-    w = dic['Z']!=-1.
+    w = dic['Z']>-1.
     if unique:
         w &= dic['THING_ID']>0
         w &= dic['RA']!=dic['DEC']

@@ -3,6 +3,7 @@ import sys
 import fitsio
 import scipy as sp
 from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 
 try:
     import __builtin__
@@ -76,6 +77,38 @@ def read_ivar_calibration(path):
     h.close()
 
     return ivar_calib
+def plot_flux_calibration(path):
+    """
+
+    """
+
+    h = fitsio.FITS(path)
+    ll_st = h[1]['LOGLAM'][:]
+    st = h[1]['STACK'][:]
+    w = st!=0.
+    h.close()
+
+    plt.plot(10**ll_st[w],st[w])
+    plt.xlabel(r'$\lambda_{\mathrm{Obs.}}\,[\mathrm{AA{}}]$')
+    plt.xlabel(r'$C(\lambda_{\mathrm{Obs.}})$')
+    plt.grid()
+    plt.show()
+
+    return
+def plot_ivar_calibration(path):
+
+    h = fitsio.FITS(path)
+    ll = h[2]['LOGLAM'][:]
+    eta = h[2]['ETA'][:]
+    h.close()
+
+    plt.plot(10**ll,eta)
+    plt.xlabel(r'$\lambda_{\mathrm{Obs.}}\,[\mathrm{AA{}}]$')
+    plt.xlabel(r'$\eta(\lambda_{\mathrm{Obs.}})$')
+    plt.grid()
+    plt.show()
+
+    return
 def read_mask_lines(path):
 
     usr_mask_obs = []
