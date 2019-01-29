@@ -45,6 +45,9 @@ if __name__ == '__main__':
     parser.add_argument('--qso-pca',type=str,default=None,required=True,
         help='Path to quasar PCA')
 
+    parser.add_argument('--deg-legendre',type=int,default=3,required=False,
+        help='Number of Legendre Polynoms')
+
     parser.add_argument('--mask-file',type=str,default=None,required=False,
         help='Path to file to mask regions in lambda_OBS and lambda_RF. In file each line is: region_name region_min region_max (OBS or RF) [Angstrom]')
 
@@ -89,7 +92,7 @@ if __name__ == '__main__':
     p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
-        dwave_side=args.dwave_side)
+        dwave_side=args.dwave_side,deg_legendre=args.deg_legendre)
 
     ###
     cpu_data = {}
@@ -119,6 +122,7 @@ if __name__ == '__main__':
             {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [Angstrom]'},
             {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior on both side of the line [km/s]'},
             {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
+            {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             ]
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
@@ -129,7 +133,7 @@ if __name__ == '__main__':
         dic = {}
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
-        for k in ['Z','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
+        for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
 
         w = sp.isnan(dic['ZERR'])
@@ -149,6 +153,11 @@ if __name__ == '__main__':
             dic['ZWARN'][w] |= ZW.NODATA_RED
             w = (dic['NPIXBLUE']<args.npix_min) | (dic['NPIXRED']<args.npix_min)
             dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
+
+            w = dic['ZLINE']!=-1.
+            dic['ZLINE'][w] = dic['ZLINE'][w]/lv-1.
+        else:
+            dic['ZLINE'] = -sp.ones(dic['ZLINE'].size)
 
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 

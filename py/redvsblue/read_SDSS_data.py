@@ -1,12 +1,14 @@
 from __future__ import print_function
-import scipy as sp
 import fitsio
 import iminuit
 from functools import partial
+import scipy as sp
+import scipy.special
 
 from redvsblue import utils
 from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
+from redvsblue._zscan import _zchi2_one
 
 counter = None
 lock = None
@@ -19,6 +21,54 @@ def targetid2platemjdfiber(targetid):
     mjd = (targetid // 10000) % 100000
     plate = (targetid // (10000 * 100000))
     return (plate, mjd, fiber)
+
+
+def fit_spec(lamRF, flux, ivar, qso_pca=None):
+
+    model = sp.array([ el(lamRF) for el in qso_pca ])
+    def chi2(a0):
+        y = flux-a0*model[0]
+        return (y**2*ivar).sum()
+
+    a0 = abs(flux.mean())
+    mig = iminuit.Minuit(chi2,a0=a0,error_a0=a0/2.,errordef=1.,print_level=-1)
+    mig.migrad()
+
+    return mig.values['a0']*model[0]
+def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, qso_pca=None, dv_coarse=None, dv_fine=None):
+    """
+
+    """
+
+    zcoeff = sp.zeros(modelpca.shape[2])
+    p_zchi2_one = partial(_zchi2_one, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
+    chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
+    zPCA = zrange[sp.argmin(chi2)]
+
+    Dz = utils.get_dz(dv_coarse,zPCA)
+    dz = utils.get_dz(dv_fine,zPCA)
+    tzrange = sp.arange(zPCA-Dz,zPCA+Dz,dz)
+    tmodelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in tzrange ])
+    chi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
+
+    idxmin = sp.argmin(chi2)
+    zPCA = tzrange[idxmin]
+    fval = chi2[idxmin]
+
+    model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
+    p_zchi2_one(model)
+    model = model.dot(zcoeff)
+    lLine = lam[sp.argmax(model)]
+
+    zerr = 0.1
+    zwarn = 0
+
+    zcoeff = sp.zeros(legendre.shape[1])
+    zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)
+    deltachi2 = zchi2-fval
+
+    return lLine, zPCA, zerr, zwarn, fval, deltachi2
+
 
 def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
     """
@@ -102,60 +152,14 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max
         iv = iv[fiber-1]
 
     return ll, fl, iv
-def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
-    model = sp.array([ el(lamRF) for el in qso_pca ])
-    def chi2(a0):
-        y = flux-a0*model[0]
-        return (y**2*ivar).sum()
 
-    a0 = abs(flux.mean())
-    mig = iminuit.Minuit(chi2,a0=a0,error_a0=a0/2.,errordef=1.,print_level=-1)
-    mig.migrad()
 
-    return mig.values['a0']*model[0]
-def fit_spec_redshift(z, lam, flux, ivar, qso_pca=None, dv_prior=None):
-    """
 
-    """
 
-    def chi2(zl,a0,a1,a2,a3):
-        par = sp.array([a0,a1,a2,a3])
-        model = sp.array([ el(lam/(1.+zl)) for el in qso_pca ])
-        model = (model*par[:,None]).sum(axis=0)
-        y = flux-model
-        return (y**2*ivar).sum()
 
-    a0 = abs(flux.mean())
-    dz = utils.get_dz(dv_prior,z)
-    limit_zl = (z-dz,z+dz)
-    mig = iminuit.Minuit(chi2,
-        zl=z,error_zl=dz/2.,limit_zl=limit_zl,
-        a0=a0,error_a0=a0/2.,
-        a1=0.,error_a1=0.1,
-        a2=0.,error_a2=0.1,
-        a3=0.,error_a3=0.1,
-        errordef=1.,print_level=-1)
-    mig.migrad()
 
-    z = mig.values['zl']
-    zerr = mig.errors['zl']
-    zwarn = mig.get_fmin()['is_valid']
-    fval = mig.get_fmin()['fval']
 
-    model = sp.ones(flux.size)
-    def chi2(a0):
-        y = flux-a0*model
-        return (y**2*ivar).sum()
-
-    a0 = abs(flux.mean())
-    mig = iminuit.Minuit(chi2,
-        a0=a0,error_a0=a0/2.,
-        errordef=1.,print_level=-1)
-    mig.migrad()
-    deltachi2 = mig.get_fmin()['fval']-fval
-
-    return z, zerr, zwarn, fval, deltachi2
 def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
     veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
     """
@@ -230,7 +234,8 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
-    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100):
+    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, deg_legendre=4,
+    dv_coarse=100., dv_fine=10.):
     """
 
     """
@@ -239,7 +244,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
 
-    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_prior=dv_prior)
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine)
 
     ### Sort PLATE-MJD
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
@@ -268,6 +273,9 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
         thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
+        legendre = sp.array([scipy.special.legendre(i)( (lam-lam.min())/(lam.max()-lam.min())*2.-1. ) for i in range(deg_legendre)])
+        legendre = legendre.T
+        wfl = fl*iv
 
         for i in range(w.sum()):
             print("\rcomputing xi: {}%".format(round(counter.value*100./ndata,2)),end="")
@@ -280,12 +288,17 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             tfl = fl[f-1]
             tiv = iv[f-1]
+            twfl = wfl[f-1]
             lamRF = lam/(1.+z)
+
+            Dz = utils.get_dz(dv_prior,z)
+            dz = utils.get_dz(dv_coarse,z)
+            zrange = sp.arange(z-Dz,z+Dz,dz)
+            modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+
             data[t] = { 'ZPRIOR':z }
-
             for ln, lv in lines.items():
-
-                valline = {'Z':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'DCHI2':0., 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
+                valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'DCHI2':0., 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
 
                 w = tiv>0.
                 if not ln=='PCA':
@@ -295,9 +308,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>0:
-                    valline['Z'], valline['ZERR'], zwarn, valline['CHI2'], valline['DCHI2'] = p_fit_spec(z, lam[w], tfl[w], tiv[w])
-                    if not zwarn:
-                        valline['ZWARN'] |= ZW.BAD_MINFIT
+                    valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
+                        lam[w], tfl[w], tiv[w], twfl[w], modelpca[:,w,:], legendre[w,:], zrange)
 
                 data[t][ln] = valline
 
