@@ -49,7 +49,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
     idxmin = sp.argmin(chi2)
     zPCA = zrange[idxmin]
-    if idxmin<=1 | idxmin>=zrange.size-2:
+    if (idxmin<=1) | (idxmin>=zrange.size-2):
         zwarn |= ZW.Z_FITLIMIT
 
     ### Fine scan
@@ -61,7 +61,8 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     ### Precise z_PCA
     zPCA, zerr, fval, tzwarn = minfit(tzrange,chi2)
     zwarn |= tzwarn
-    if idxmin<=1 | idxmin>=zrange.size-2:
+    idxmin = sp.argmin(chi2)
+    if (idxmin<=1) | (idxmin>=tzrange.size-2):
         zwarn |= ZW.Z_FITLIMIT
 
     ### Observed wavelength of maximum of line
@@ -70,7 +71,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     model = model.dot(zcoeff)
     idxmin = sp.argmax(model)
     lLine = lam[idxmin]
-    if idxmin<=1 | idxmin>=model.size-2:
+    if (idxmin<=1) | (idxmin>=model.size-2):
         zwarn |= ZW.Z_FITLIMIT
 
     ### No peak fit
