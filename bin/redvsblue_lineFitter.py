@@ -100,7 +100,7 @@ if __name__ == '__main__':
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse, dv_fine=args.dv_fine)
 
-    ###
+    ### Send
     cpu_data = {}
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
@@ -116,6 +116,7 @@ if __name__ == '__main__':
     tdata = pool.map(p_fit_line,cpu_data.values())
     pool.close()
 
+    ### Put in one data set
     data = tdata[0]
     for td in tdata[1:]:
         for t in td.keys():
@@ -135,14 +136,22 @@ if __name__ == '__main__':
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
+
+    tw = sp.argsort(dic['TARGETID'])
+    for k in dic.keys():
+        dic[k] = dic[k][tw]
+
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
     for ln, lv in lines.items():
         dic = {}
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
+
         for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
+        for k in dic.keys():
+            dic[k] = dic[k][tw]
 
         w = dic['CHI2']==9e99
         dic['ZWARN'][w] |= ZW.BAD_MINFIT

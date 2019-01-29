@@ -55,7 +55,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     ### Fine scan
     Dz = utils.get_dz(dv_coarse,zPCA)
     dz = utils.get_dz(dv_fine,zPCA)
-    tzrange = sp.arange(zPCA-Dz,zPCA+Dz,dz)
+    tzrange = sp.arange(zPCA-2.*Dz,zPCA+2.*Dz,dz)
     chi2 = sp.array([ p_zchi2_one(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T) for tz in tzrange ])
 
     ### Precise z_PCA
@@ -101,6 +101,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
         dic[k] = dic[k][w]
 
     w = dic['Z']>-1.
+    w &= dic['Z']!=0.
     if unique:
         w &= dic['THING_ID']>0
         w &= dic['RA']!=dic['DEC']

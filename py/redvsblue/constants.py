@@ -5,11 +5,11 @@ lines = {
     'LYA'  : {'LINE':1215.67,   'BLUE_MIN':1040., 'BLUE_MAX':1200., 'RED_MIN':1260.,  'RED_MAX':1375. },
 }
 emissionLines = {
+    'PCA'    : 0.,
     'Halpha' : 6562.8,
     'Hbeta'  : 4862.68,
     'MgII'   : 2796.3511,
     'CIII'   : 1908.734,
     'CIV'    : 1548.2049,
     'LYA'    : 1215.67,
-    'PCA'    : 0.,
 }
