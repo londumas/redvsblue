@@ -56,17 +56,20 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     Dz = utils.get_dz(dv_coarse,zPCA)
     dz = utils.get_dz(dv_fine,zPCA)
     tzrange = sp.arange(zPCA-2.*Dz,zPCA+2.*Dz,dz)
-    chi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
-    idxmin = sp.argmin(chi2)
+    tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
+    idxmin = sp.argmin(tchi2)
     if (idxmin<=1) | (idxmin>=tzrange.size-2):
         zwarn |= ZW.Z_FITLIMIT
 
     ### Precise z_PCA
-    tresult = minfit(tzrange[idxmin-1:idxmin+2],chi2[idxmin-1:idxmin+2])
+    if ((chi2==9e99).sum()>0) | ((tchi2==9e99).sum()>0):
+        tresult = None
+    else:
+        tresult = minfit(tzrange[idxmin-1:idxmin+2],tchi2[idxmin-1:idxmin+2])
     if tresult is None:
         zPCA = tzrange[idxmin]
         zerr = -1.
-        fval = chi2[idxmin]
+        fval = tchi2[idxmin]
         zwarn |= ZW.BAD_MINFIT
     else:
         zPCA, zerr, fval, tzwarn = tresult
@@ -84,7 +87,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     ### No peak fit
     zcoeff = sp.zeros(legendre.shape[1])
     zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)
-    deltachi2 = zchi2-fval
+    deltachi2 = zchi2
 
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
