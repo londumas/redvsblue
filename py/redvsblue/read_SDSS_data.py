@@ -9,6 +9,7 @@ from redvsblue import utils
 from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
+from redvsblue.fitz import minfit
 
 counter = None
 lock = None
@@ -56,9 +57,8 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     tmodelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in tzrange ])
     chi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
 
-    idxmin = sp.argmin(chi2)
-    zPCA = tzrange[idxmin]
-    fval = chi2[idxmin]
+    zPCA, zerr, fval, tzwarn = minfit(tzrange,chi2)
+    zwarn |= tzwarn
     if idxmin<=1 | idxmin>=zrange.size-2:
         zwarn |= ZW.Z_FITLIMIT
 
