@@ -56,7 +56,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     Dz = utils.get_dz(dv_coarse,zPCA)
     dz = utils.get_dz(dv_fine,zPCA)
     tzrange = sp.arange(zPCA-2.*Dz,zPCA+2.*Dz,dz)
-    chi2 = sp.array([ p_zchi2_one(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T) for tz in tzrange ])
+    chi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
     idxmin = sp.argmin(chi2)
     if (idxmin<=1) | (idxmin>=tzrange.size-2):
         zwarn |= ZW.Z_FITLIMIT
@@ -73,7 +73,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
         zwarn |= tzwarn
 
     ### Observed wavelength of maximum of line
-    model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
+    model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
     p_zchi2_one(model)
     model = model.dot(zcoeff)
     idxmin = sp.argmax(model)
@@ -314,7 +314,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)
             zrange = sp.arange(z-Dz,z+Dz,dz)
-            modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+            modelpca = sp.array([ sp.append(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in zrange ])
 
             data[t] = { 'ZPRIOR':z }
             for ln, lv in lines.items():
