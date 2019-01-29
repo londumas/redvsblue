@@ -40,10 +40,15 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
 
     """
 
+    zwarn = 0
+
     zcoeff = sp.zeros(modelpca.shape[2])
     p_zchi2_one = partial(_zchi2_one, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
     chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
-    zPCA = zrange[sp.argmin(chi2)]
+    idxmin = sp.argmin(chi2)
+    zPCA = zrange[idxmin]
+    if idxmin<=1 | idxmin>=zrange.size-2:
+        zwarn |= ZW.Z_FITLIMIT
 
     Dz = utils.get_dz(dv_coarse,zPCA)
     dz = utils.get_dz(dv_fine,zPCA)
@@ -54,14 +59,18 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
     idxmin = sp.argmin(chi2)
     zPCA = tzrange[idxmin]
     fval = chi2[idxmin]
+    if idxmin<=1 | idxmin>=zrange.size-2:
+        zwarn |= ZW.Z_FITLIMIT
 
     model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
     p_zchi2_one(model)
     model = model.dot(zcoeff)
-    lLine = lam[sp.argmax(model)]
+    idxmin = sp.argmax(model)
+    lLine = lam[idxmin]
+    if idxmin<=1 | idxmin>=model.size-2:
+        zwarn |= ZW.Z_FITLIMIT
 
     zerr = 0.1
-    zwarn = 0
 
     zcoeff = sp.zeros(legendre.shape[1])
     zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)

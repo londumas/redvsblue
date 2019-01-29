@@ -42,6 +42,12 @@ if __name__ == '__main__':
     parser.add_argument('--dv-prior',type=float,default=10000.,required=False,
         help='Velocity difference box prior for each side of the line [km/s]')
 
+    parser.add_argument('--dv-coarse',type=float,default=100.,required=False,
+        help='Velocity grid for the coarse determination of the minimum [km/s]')
+
+    parser.add_argument('--dv-fine',type=float,default=10.,required=False,
+        help='Velocity grid for the fine determination of the minimum [km/s]')
+
     parser.add_argument('--qso-pca',type=str,default=None,required=True,
         help='Path to quasar PCA')
 
@@ -92,7 +98,7 @@ if __name__ == '__main__':
     p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
-        dwave_side=args.dwave_side,deg_legendre=args.deg_legendre)
+        dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse, dv_fine=args.dv_fine)
 
     ###
     cpu_data = {}
@@ -121,6 +127,8 @@ if __name__ == '__main__':
     head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
             {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [Angstrom]'},
             {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior on both side of the line [km/s]'},
+            {'name':'DVCOARSE','value':args.dv_coarse,'comment':'Velocity grid for the coarse determination of the minimum [km/s]'},
+            {'name':'DVFINE','value':args.dv_fine,'comment':'Velocity grid for the fine determination of the minimum [km/s]'},
             {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             ]
@@ -136,9 +144,8 @@ if __name__ == '__main__':
         for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
 
-        w = sp.isnan(dic['ZERR'])
+        w = dic['CHI2']==9e99
         dic['ZWARN'][w] |= ZW.BAD_MINFIT
-        dic['ZERR'][w] = -1.
 
         w = dic['DCHI2']<constants.min_deltachi2
         dic['ZWARN'][w] |= ZW.SMALL_DELTA_CHI2
@@ -149,8 +156,10 @@ if __name__ == '__main__':
         if not ln=='PCA':
             w = dic['NPIXBLUE']==0
             dic['ZWARN'][w] |= ZW.NODATA_BLUE
+
             w = dic['NPIXRED']==0
             dic['ZWARN'][w] |= ZW.NODATA_RED
+
             w = (dic['NPIXBLUE']<args.npix_min) | (dic['NPIXRED']<args.npix_min)
             dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
 
