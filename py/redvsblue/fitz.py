@@ -6,21 +6,17 @@ def minfit(x, y):
 
     """
 
-    idxmin = sp.argmin(y)
-    x0Min = x[idxmin]
-    y0Min = y[idxmin]
-
     if x.size<3:
-        return (x0Min,-1,y0Min,ZW.BAD_MINFIT)
+        return None
 
     try:
         #- y = a x^2 + b x + c
         a,b,c = sp.polyfit(x,y,2)
     except sp.linalg.LinAlgError:
-        return (x0Min,-1,y0Min,ZW.BAD_MINFIT)
+        return None
 
     if a==0.:
-        return (x0Min,-1,y0Min,ZW.BAD_MINFIT)
+        return None
 
     #- recast as y = y0 + ((x-x0)/xerr)^2
     x0 = -b/(2.*a)

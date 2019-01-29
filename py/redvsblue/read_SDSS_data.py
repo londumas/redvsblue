@@ -62,8 +62,15 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
         zwarn |= ZW.Z_FITLIMIT
 
     ### Precise z_PCA
-    zPCA, zerr, fval, tzwarn = minfit(tzrange[idxmin-1:idxmin+2],chi2[idxmin-1:idxmin+2])
-    zwarn |= tzwarn
+    tresult = minfit(tzrange[idxmin-1:idxmin+2],chi2[idxmin-1:idxmin+2])
+    if tresult is None:
+        zPCA = tzrange[idxmin]
+        zerr = -1.
+        fval = chi2[idxmin]
+        zwarn |= ZW.BAD_MINFIT
+    else:
+        zPCA, zerr, fval, tzwarn = tresult
+        zwarn |= tzwarn
 
     ### Observed wavelength of maximum of line
     model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
