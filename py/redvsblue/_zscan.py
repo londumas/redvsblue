@@ -1,10 +1,8 @@
 import scipy as sp
-import numba
 import warnings
 
 warnings.filterwarnings('error')
 
-#@numba.jit
 def _zchi2_one(Tb, weights, flux, wflux, zcoeff):
     """
 
