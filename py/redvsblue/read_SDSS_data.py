@@ -36,7 +36,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     mig.migrad()
 
     return mig.values['a0']*model[0]
-def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, qso_pca=None, dv_coarse=None, dv_fine=None):
+def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line, qso_pca=None, dv_coarse=None, dv_fine=None):
     """
 
     """
@@ -75,14 +75,17 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, q
         zPCA, zerr, fval, tzwarn = tresult
         zwarn |= tzwarn
 
-    ### Observed wavelength of maximum of line
-    model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
-    p_zchi2_one(model)
-    model = model.dot(zcoeff)
-    idxmin = sp.argmax(model)
-    lLine = lam[idxmin]
-    if (idxmin<=1) | (idxmin>=model.size-2):
-        zwarn |= ZW.Z_FITLIMIT
+    if line!='PCA':
+        ### Observed wavelength of maximum of line
+        model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
+        p_zchi2_one(model)
+        model = model.dot(zcoeff)
+        idxmin = sp.argmax(model)
+        lLine = lam[idxmin]
+        if (idxmin<=1) | (idxmin>=model.size-2):
+            zwarn |= ZW.Z_FITLIMIT
+    else:
+        lLine = -1.
 
     ### No peak fit
     zcoeff = sp.zeros(legendre.shape[1])
@@ -332,7 +335,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
                 if valline['NPIX']>0:
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
-                        lam[w], tfl[w], tiv[w], twfl[w], modelpca[:,w,:], legendre[w,:], zrange)
+                        lam[w], tfl[w], tiv[w], twfl[w], modelpca[:,w,:], legendre[w,:], zrange, ln)
 
                 data[t][ln] = valline
 

@@ -160,7 +160,7 @@ if __name__ == '__main__':
         dic['DCHI2'][w] -= dic['CHI2'][w]
         dic['DCHI2'][~w] = 0.
 
-        w = dic['DCHI2']<constants.min_deltachi2
+        w &= dic['DCHI2']<constants.min_deltachi2
         dic['ZWARN'][w] |= ZW.SMALL_DELTA_CHI2
 
         w = dic['NPIX']==0.

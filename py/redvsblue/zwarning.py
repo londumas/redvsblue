@@ -13,3 +13,19 @@ class ZWarningMask(object):
     BAD_MINFIT        = 2**10 #- Bad parabola fit to the chi2 minimum
     NODATA_BLUE       = 2**11 #- No data on the blue side of the line
     NODATA_RED        = 2**12 #- No data on the blue side of the line
+
+    from_bit_to_name = {
+    0:'SKY',
+    1:'LITTLE_COVERAGE',
+    2:'SMALL_DELTA_CHI2',
+    3:'NEGATIVE_MODEL',
+    4:'MANY_OUTLIERS',
+    5:'Z_FITLIMIT',
+    6:'NEGATIVE_EMISSION',
+    7:'UNPLUGGED',
+    8:'BAD_TARGET',
+    9:'NODATA',
+    10:'BAD_MINFIT',
+    11:'NODATA_BLUE',
+    12:'NODATA_RED',
+    }
