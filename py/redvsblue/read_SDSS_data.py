@@ -328,7 +328,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             data[t] = { 'ZPRIOR':z }
             for ln, lv in lines.items():
-                valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':-1., 'DCHI2':0., 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
+                valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99, 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
 
                 w = tiv>0.
                 if not ln=='PCA':
