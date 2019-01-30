@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--dwave-side',type=int,default=85,required=False,
         help='Wavelength interval on both side of the line [Angstrom]')
 
-    parser.add_argument('--npix-min',type=int,default=5,required=False,
+    parser.add_argument('--npix-min',type=int,default=10,required=False,
         help='Minimum number of pixels on each side of the line')
 
     parser.add_argument('--nb-zmin',type=int,default=3,required=False,
@@ -156,7 +156,8 @@ if __name__ == '__main__':
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
 
-        for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2','NPIXBLUE','NPIXRED','NPIX']:
+        for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2',
+            'NPIXBLUE','NPIXRED','NPIX','NPIXBLUEBEST','NPIXREDBEST','NPIXBEST']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
         for k in dic.keys():
             dic[k] = dic[k][tw]
@@ -172,13 +173,16 @@ if __name__ == '__main__':
         dic['ZWARN'][w] |= ZW.NODATA
 
         if not ln=='PCA':
-            w = dic['NPIXBLUE']==0
+            w = (dic['NPIXBLUE']==0) | (dic['NPIXBLUEBEST']==0)
             dic['ZWARN'][w] |= ZW.NODATA_BLUE
 
-            w = dic['NPIXRED']==0
+            w = (dic['NPIXRED']==0) | (dic['NPIXREDBEST']==0)
             dic['ZWARN'][w] |= ZW.NODATA_RED
 
             w = (dic['NPIXBLUE']<args.npix_min) | (dic['NPIXRED']<args.npix_min)
+            dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
+
+            w = (dic['NPIXBLUEBEST']<args.npix_min) | (dic['NPIXREDBEST']<args.npix_min)
             dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
 
             w = dic['ZLINE']!=-1.

@@ -328,18 +328,26 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             data[t] = { 'ZPRIOR':z }
             for ln, lv in lines.items():
-                valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99, 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0}
+                valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
+                'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
 
                 w = tiv>0.
                 if not ln=='PCA':
-                    valline['NPIXBLUE'] = ( (tiv>0.) & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
-                    valline['NPIXRED'] = ( (tiv>0.) & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
+                    valline['NPIXBLUE'] = ( w & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
+                    valline['NPIXRED'] = ( w & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
                     w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>0:
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
                         lam[w], tfl[w], tiv[w], twfl[w], modelpca[:,w,:], legendre[w,:], zrange, ln)
+
+                if (not ln=='PCA') and (valline['ZLINE']!=-1.):
+                    w = tiv>0.
+                    tlamRF = lam*lv/valline['ZLINE']
+                    valline['NPIXBLUEBEST'] = ( w & (tlamRF>lv-dwave_side) & (tlamRF<lv) ).sum()
+                    valline['NPIXREDBEST'] = ( w & (tlamRF>=lv) & (tlamRF<lv+dwave_side) ).sum()
+                    valline['NPIXBEST'] = (w & (tlamRF>lv-dwave_side) & (tlamRF<lv+dwave_side) ).sum()
 
                 data[t][ln] = valline
 
