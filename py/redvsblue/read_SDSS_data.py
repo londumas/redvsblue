@@ -36,7 +36,8 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     mig.migrad()
 
     return mig.values['a0']*model[0]
-def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line, qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3):
+def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
+    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3):
     """
 
     """
@@ -64,7 +65,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         ### Fine scan
         Dz = utils.get_dz(dv_coarse,zPCA)
         dz = utils.get_dz(dv_fine,zPCA)
-        tzrange = sp.linspace(zPCA-1.5*Dz,zPCA+1.5*Dz,int(3.*Dz/dz))
+        tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,int(4.*Dz/dz))
         tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
         tidxmin = sp.argmin(tchi2)
         if (tidxmin<=1) | (tidxmin>=tzrange.size-2):
@@ -85,8 +86,16 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             zwarn |= tzwarn
             results[idxmin] = (zPCA, zerr, zwarn, fval)
 
-    idxmin = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
-    zPCA, zerr, zwarn, fval = results[idxmin]
+    idx_min = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
+    if len(results)==1:
+        zPCA, zerr, zwarn, fval = results[idx_min]
+    else:
+        idx_2nd_min = sp.array([ k for k in results.keys() if k!=idx_min ])[sp.argmin([ v[3] for k,v in results.items() if k!=idx_min ])]
+        dv = sp.absolute(utils.get_dv(results[idx_min][0],results[idx_2nd_min][0]))
+        if (dv<=dv_fine) & (results[idx_min][2]!=0) & (results[idx_2nd_min][2]==0):
+            zPCA, zerr, zwarn, fval = results[idx_2nd_min]
+        else:
+            zPCA, zerr, zwarn, fval = results[idx_min]
 
     if line!='PCA':
         ### Observed wavelength of maximum of line
