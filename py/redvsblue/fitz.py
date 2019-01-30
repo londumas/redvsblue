@@ -1,6 +1,12 @@
 import scipy as sp
 from redvsblue.zwarning import ZWarningMask as ZW
 
+def find_minima(x):
+
+    ii = sp.where(sp.r_[True, x[1:]<=x[:-1]] & sp.r_[x[:-1]<=x[1:], True])[0]
+    jj = sp.argsort(x[ii])
+
+    return ii[jj]
 def minfit(x, y):
     """
 

@@ -39,6 +39,9 @@ if __name__ == '__main__':
     parser.add_argument('--npix-min',type=int,default=5,required=False,
         help='Minimum number of pixels on each side of the line')
 
+    parser.add_argument('--nb-zmin',type=int,default=3,required=False,
+        help='Number of redshift minima too inspect with a fine grid')
+
     parser.add_argument('--dv-prior',type=float,default=10000.,required=False,
         help='Velocity difference box prior for each side of the line [km/s]')
 
@@ -98,7 +101,8 @@ if __name__ == '__main__':
     p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
-        dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse, dv_fine=args.dv_fine)
+        dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
+        dv_fine=args.dv_fine, nb_zmin=args.nb_zmin)
 
     ### Send
     cpu_data = {}
@@ -131,6 +135,7 @@ if __name__ == '__main__':
             {'name':'DVCOARSE','value':args.dv_coarse,'comment':'Velocity grid for the coarse determination of the minimum [km/s]'},
             {'name':'DVFINE','value':args.dv_fine,'comment':'Velocity grid for the fine determination of the minimum [km/s]'},
             {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
+            {'name':'NZMIN','value':args.nb_zmin,'comment':'Number of redshift minima too inspect with a fine grid'},
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             ]
     dic = {}

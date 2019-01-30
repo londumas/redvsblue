@@ -9,7 +9,7 @@ from redvsblue import utils
 from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
-from redvsblue.fitz import minfit
+from redvsblue.fitz import minfit, find_minima
 
 counter = None
 lock = None
@@ -36,44 +36,57 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
     mig.migrad()
 
     return mig.values['a0']*model[0]
-def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line, qso_pca=None, dv_coarse=None, dv_fine=None):
+def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line, qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3):
     """
 
     """
-
-    zwarn = 0
 
     ### Coarse scan
     zcoeff = sp.zeros(modelpca.shape[2])
     p_zchi2_one = partial(_zchi2_one, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
     chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
-    idxmin = sp.argmin(chi2)
-    zPCA = zrange[idxmin]
-    if (idxmin<=1) | (idxmin>=zrange.size-2):
-        zwarn |= ZW.Z_FITLIMIT
 
-    ### Fine scan
-    Dz = utils.get_dz(dv_coarse,zPCA)
-    dz = utils.get_dz(dv_fine,zPCA)
-    tzrange = sp.arange(zPCA-2.*Dz,zPCA+2.*Dz,dz)
-    tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
-    idxmin = sp.argmin(tchi2)
-    if (idxmin<=1) | (idxmin>=tzrange.size-2):
-        zwarn |= ZW.Z_FITLIMIT
+    ### Loop over different minima
+    results = {}
+    for idxmin in find_minima(chi2)[:nb_zmin]:
 
-    ### Precise z_PCA
-    if ((chi2==9e99).sum()>0) | ((tchi2==9e99).sum()>0):
-        tresult = None
-    else:
-        tresult = minfit(tzrange[idxmin-1:idxmin+2],tchi2[idxmin-1:idxmin+2])
-    if tresult is None:
-        zPCA = tzrange[idxmin]
-        zerr = -1.
-        fval = tchi2[idxmin]
-        zwarn |= ZW.BAD_MINFIT
-    else:
-        zPCA, zerr, fval, tzwarn = tresult
-        zwarn |= tzwarn
+        zwarn = 0
+
+        if (chi2==9e99).sum()>0:
+            zwarn |= ZW.BAD_MINFIT
+            results[idxmin] = (zrange[idxmin], -1., zwarn, chi2[idxmin])
+            continue
+
+        zPCA = zrange[idxmin]
+        if (idxmin<=1) | (idxmin>=zrange.size-2):
+            zwarn |= ZW.Z_FITLIMIT
+
+        ### Fine scan
+        Dz = utils.get_dz(dv_coarse,zPCA)
+        dz = utils.get_dz(dv_fine,zPCA)
+        tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,int(4.*Dz/dz))
+        tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
+        tidxmin = sp.argmin(tchi2)
+        if (tidxmin<=1) | (tidxmin>=tzrange.size-2):
+            zwarn |= ZW.Z_FITLIMIT
+
+        if (tchi2==9e99).sum()>0:
+            zwarn |= ZW.BAD_MINFIT
+            results[idxmin] = (tzrange[tidxmin], -1., zwarn, tchi2[tidxmin])
+            continue
+
+        ### Precise z_PCA
+        tresult = minfit(tzrange[tidxmin-1:tidxmin+2],tchi2[tidxmin-1:tidxmin+2])
+        if tresult is None:
+            zwarn |= ZW.BAD_MINFIT
+            results[idxmin] = (tzrange[tidxmin], -1., zwarn, tchi2[tidxmin])
+        else:
+            zPCA, zerr, fval, tzwarn = tresult
+            zwarn |= tzwarn
+            results[idxmin] = (zPCA, zerr, zwarn, fval)
+
+    idxmin = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
+    zPCA, zerr, zwarn, fval = results[idxmin]
 
     if line!='PCA':
         ### Observed wavelength of maximum of line
@@ -91,7 +104,6 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     zcoeff = sp.zeros(legendre.shape[1])
     zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)
     deltachi2 = zchi2
-
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
@@ -261,7 +273,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, deg_legendre=4,
-    dv_coarse=100., dv_fine=10.):
+    dv_coarse=100., dv_fine=10., nb_zmin=3):
     """
 
     """
@@ -270,7 +282,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
 
-    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine)
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin)
 
     ### Sort PLATE-MJD
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
@@ -319,7 +331,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)
-            zrange = sp.arange(z-Dz,z+Dz,dz)
+            zrange = sp.linspace(z-Dz,z+Dz,int(2.*Dz/dz))
             modelpca = sp.array([ sp.append(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in zrange ])
 
             data[t] = { 'ZPRIOR':z }
