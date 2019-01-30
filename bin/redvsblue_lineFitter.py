@@ -27,10 +27,10 @@ if __name__ == '__main__':
     parser.add_argument('--z-key', type=str, default='Z', required=False,
         help='Name of the key giving redshifts in drq')
 
-    parser.add_argument('--lambda-min',type=float,default=None,required=False,
+    parser.add_argument('--lambda-min',type=float,default=3600.,required=False,
         help='Lower limit on observed wavelength [Angstrom]')
 
-    parser.add_argument('--lambda-max',type=float,default=None,required=False,
+    parser.add_argument('--lambda-max',type=float,default=10000.,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
     parser.add_argument('--dwave-side',type=int,default=85,required=False,
@@ -164,9 +164,6 @@ if __name__ == '__main__':
         w = (dic['CHI2']!=9e99) & (dic['DCHI2']!=9e99)
         dic['DCHI2'][w] -= dic['CHI2'][w]
         dic['DCHI2'][~w] = 0.
-
-        w &= dic['DCHI2']<constants.min_deltachi2
-        dic['ZWARN'][w] |= ZW.SMALL_DELTA_CHI2
 
         w = dic['NPIX']==0.
         dic['ZWARN'][w] |= ZW.NODATA

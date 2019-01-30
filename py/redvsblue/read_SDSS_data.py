@@ -156,9 +156,9 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max
 
     w = sp.ones(ll.size,dtype=bool)
     if not lambda_min is None:
-        w &= ll>lambda_min
+        w &= ll>=lambda_min
     if not lambda_max is None:
-        w &= ll<lambda_min
+        w &= ll<=lambda_max
     if not veto_lines is None:
         for lmin,lmax in veto_lines:
             w &= (ll<lmin) | (ll>lmax)
@@ -290,7 +290,10 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
             print('WARNING: Can not find PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
-        #print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
+
+        if lam.size==0:
+            print('WARNING: No data in PLATE={}, MJD={}: {}'.format(p,m,path))
+            continue
 
         thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
