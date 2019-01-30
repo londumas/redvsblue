@@ -64,7 +64,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         ### Fine scan
         Dz = utils.get_dz(dv_coarse,zPCA)
         dz = utils.get_dz(dv_fine,zPCA)
-        tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,int(4.*Dz/dz))
+        tzrange = sp.linspace(zPCA-1.5*Dz,zPCA+1.5*Dz,int(3.*Dz/dz))
         tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
         tidxmin = sp.argmin(tchi2)
         if (tidxmin<=1) | (tidxmin>=tzrange.size-2):
