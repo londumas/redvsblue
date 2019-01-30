@@ -2,6 +2,7 @@ import os
 import sys
 import fitsio
 import scipy as sp
+import scipy.ndimage
 import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 
@@ -36,7 +37,7 @@ def get_dz(dv, zref):
     dz = (1.+zref)*dv/c
 
     return dz
-def read_PCA(path,dim=False):
+def read_PCA(path,dim=False,smooth=None):
     """
 
     """
@@ -47,13 +48,20 @@ def read_PCA(path,dim=False):
     if 'LOGLAM' in head and head['LOGLAM']!=0:
         ll = 10**ll
     fl = sp.asarray(h['BASIS_VECTORS'].read(),dtype=sp.float64)
+    h.close()
+
     fl[0,:] /= fl[0,:].mean()
     if not dim:
         dim = 1
     else:
         dim = fl.shape[0]
-    qso_pca = [ interp1d(ll,fl[i,:],fill_value='extrapolate',kind='linear') for i in range(dim) ]
-    h.close()
+
+    copyfl = fl.copy()
+    if not smooth is None:
+        for i in range(copyfl.shape[0]):
+            copyfl[i,:] = sp.ndimage.filters.gaussian_filter(copyfl[i,:],sigma=smooth)
+
+    qso_pca = [ interp1d(ll,copyfl[i,:],fill_value='extrapolate',kind='linear') for i in range(dim) ]
 
     return qso_pca
 def read_flux_calibration(path):

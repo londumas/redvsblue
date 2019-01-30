@@ -51,6 +51,9 @@ if __name__ == '__main__':
     parser.add_argument('--dv-fine',type=float,default=10.,required=False,
         help='Velocity grid for the fine determination of the minimum [km/s]')
 
+    parser.add_argument('--sigma-smooth',type=int,default=2,required=False,
+        help='Smoothing kernel sigma for the PCA, in number of points')
+
     parser.add_argument('--qso-pca',type=str,default=None,required=True,
         help='Path to quasar PCA')
 
@@ -80,7 +83,7 @@ if __name__ == '__main__':
     lines = constants.emissionLines
 
     ###
-    qso_pca = utils.read_PCA(args.qso_pca,dim=True)
+    qso_pca = utils.read_PCA(args.qso_pca,dim=True,smooth=args.sigma_smooth)
     if not args.flux_calib is None:
         args.flux_calib = utils.read_flux_calibration(args.flux_calib)
     if not args.ivar_calib is None:
