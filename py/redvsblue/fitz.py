@@ -30,9 +30,9 @@ def minfit(x, y):
 
     zwarn = 0
     if x0<=x.min() or x0>=x.max():
-        zwarn |= ZW.BAD_MINFIT
+        return None
     if y0<=0.:
-        zwarn |= ZW.BAD_MINFIT
+        return None
 
     if a>0.:
         xerr = 1./sp.sqrt(a)

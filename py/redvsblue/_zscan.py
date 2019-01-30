@@ -1,6 +1,7 @@
 import scipy as sp
 import warnings
 warnings.filterwarnings('error')
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 def _zchi2_one(Tb, weights, flux, wflux, zcoeff):
     """

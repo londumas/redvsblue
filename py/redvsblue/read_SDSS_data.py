@@ -65,11 +65,9 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         ### Fine scan
         Dz = utils.get_dz(dv_coarse,zPCA)
         dz = utils.get_dz(dv_fine,zPCA)
-        tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,int(4.*Dz/dz))
+        tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,1+int(round(4.*Dz/dz)))
         tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
-        tidxmin = sp.argmin(tchi2)
-        if (tidxmin<=1) | (tidxmin>=tzrange.size-2):
-            zwarn |= ZW.Z_FITLIMIT
+        tidxmin = 2+sp.argmin(tchi2[2:-2])
 
         if (tchi2==9e99).sum()>0:
             zwarn |= ZW.BAD_MINFIT
@@ -87,15 +85,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             results[idxmin] = (zPCA, zerr, zwarn, fval)
 
     idx_min = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
-    if len(results)==1:
-        zPCA, zerr, zwarn, fval = results[idx_min]
-    else:
-        idx_2nd_min = sp.array([ k for k in results.keys() if k!=idx_min ])[sp.argmin([ v[3] for k,v in results.items() if k!=idx_min ])]
-        dv = sp.absolute(utils.get_dv(results[idx_min][0],results[idx_2nd_min][0]))
-        if (dv<=dv_fine) & (results[idx_min][2]!=0) & (results[idx_2nd_min][2]==0):
-            zPCA, zerr, zwarn, fval = results[idx_2nd_min]
-        else:
-            zPCA, zerr, zwarn, fval = results[idx_min]
+    zPCA, zerr, zwarn, fval = results[idx_min]
 
     if line!='PCA':
         ### Observed wavelength of maximum of line
@@ -113,6 +103,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     zcoeff = sp.zeros(legendre.shape[1])
     zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)
     deltachi2 = zchi2
+
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
@@ -329,7 +320,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)
-            zrange = sp.linspace(z-Dz,z+Dz,int(2.*Dz/dz))
+            zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
             modelpca = sp.array([ sp.append(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in zrange ])
 
             data[t] = { 'ZPRIOR':z }
