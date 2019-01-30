@@ -1,6 +1,5 @@
 import scipy as sp
 import warnings
-
 warnings.filterwarnings('error')
 
 def _zchi2_one(Tb, weights, flux, wflux, zcoeff):

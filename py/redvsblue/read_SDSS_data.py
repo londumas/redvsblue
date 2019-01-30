@@ -127,6 +127,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI'):
     for k in ['PLATE','MJD','FIBERID']:
         dic[k] = h[1][k][:]
     dic['Z'] = h[1][zkey][:]
+    dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
     h.close()
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
     print('Found {} quasars'.format(dic['Z'].size))
@@ -303,6 +304,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
         thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
+        extg = catQSO['G_EXTINCTION'][w]
         legendre = sp.array([scipy.special.legendre(i)( (lam-lam.min())/(lam.max()-lam.min())*2.-1. ) for i in range(deg_legendre)])
         legendre = legendre.T
         wfl = fl*iv
@@ -320,6 +322,10 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             tiv = iv[f-1]
             twfl = wfl[f-1]
             lamRF = lam/(1.+z)
+            unred = utils.unred(lam,extg[i])
+            tfl /= unred
+            tiv *= unred**2
+            twfl *= unred
 
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)
