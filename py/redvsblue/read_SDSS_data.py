@@ -116,7 +116,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
-def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI'):
     """
 
     """
@@ -124,7 +124,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
     dic = {}
 
     h = fitsio.FITS(pathData)
-    for k in ['PLATE','MJD','FIBERID','THING_ID','RA','DEC']:
+    for k in ['PLATE','MJD','FIBERID']:
         dic[k] = h[1][k][:]
     dic['Z'] = h[1][zkey][:]
     h.close()
@@ -137,23 +137,12 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',unique=True):
 
     w = dic['Z']>-1.
     w &= dic['Z']!=0.
-    if unique:
-        w &= dic['THING_ID']>0
-        w &= dic['RA']!=dic['DEC']
-        w &= dic['RA']!=0.
-        w &= dic['DEC']!=0.
     if not zmin is None:
         w &= dic['Z']>zmin
     if not zmax is None:
         w &= dic['Z']<zmax
     for k in dic.keys():
         dic[k] = dic[k][w]
-
-    if unique:
-        _, w = sp.unique(dic['THING_ID'], return_index=True)
-        print('Unique: {}'.format(w.size))
-        for k in dic.keys():
-            dic[k] = dic[k][w]
 
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max=None, veto_lines=None, flux_calib=None, ivar_calib=None):
@@ -293,15 +282,9 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
     p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin)
 
-    ### Sort PLATE-MJD
+    ### get PLATE-MJD
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
-    npm = sp.bincount(pm)
-    w = npm>0
-    npm = npm[w]
-    w = sp.argsort(npm)
-    upm = upm[w][::-1]
-    npm = npm[w][::-1]
 
     data = {}
     for tpm in upm:

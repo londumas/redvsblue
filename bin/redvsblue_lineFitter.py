@@ -89,7 +89,7 @@ if __name__ == '__main__':
         args.mask_file = utils.read_mask_lines(args.mask_file)
 
     ### Read quasar catalog
-    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key,unique=False)
+    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key)
     print('Found {} quasars'.format(catQSO['Z'].size))
 
     if not args.nspec is None and args.nspec<catQSO['Z'].size:
