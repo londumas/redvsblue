@@ -107,7 +107,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
-def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI'):
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
     """
 
     """
@@ -115,11 +115,18 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI'):
     dic = {}
 
     h = fitsio.FITS(pathData)
-    for k in ['PLATE','MJD','FIBERID']:
-        dic[k] = h[1][k][:]
+    h[1].read_header()
+    if 'MJD' in h[1].get_colnames():
+        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID'}
+    else:
+        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER'}
+    for k,v in lst.items():
+        dic[k] = h[1][v][:]
     dic['Z'] = h[1][zkey][:]
-    dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
+    if extinction:
+        dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
     h.close()
+
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
     print('Found {} quasars'.format(dic['Z'].size))
 
@@ -263,7 +270,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, deg_legendre=4,
-    dv_coarse=100., dv_fine=10., nb_zmin=3):
+    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True):
     """
 
     """
@@ -298,7 +305,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
         thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
-        extg = catQSO['G_EXTINCTION'][w]
+        if extinction:
+            extg = catQSO['G_EXTINCTION'][w]
         legendre = sp.array([scipy.special.legendre(i)( (lam-lam.min())/(lam.max()-lam.min())*2.-1. ) for i in range(deg_legendre)])
         legendre = legendre.T
         wfl = fl*iv
@@ -316,10 +324,11 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             tiv = iv[f-1]
             twfl = wfl[f-1]
             lamRF = lam/(1.+z)
-            unred = utils.unred(lam,extg[i])
-            tfl /= unred
-            tiv *= unred**2
-            twfl *= unred
+            if extinction:
+                unred = utils.unred(lam,extg[i])
+                tfl /= unred
+                tiv *= unred**2
+                twfl *= unred
 
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)

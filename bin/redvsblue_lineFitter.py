@@ -60,6 +60,9 @@ if __name__ == '__main__':
     parser.add_argument('--deg-legendre',type=int,default=3,required=False,
         help='Number of Legendre Polynoms')
 
+    parser.add_argument('--no-extinction-correction', action='store_true', required=False,
+        help='Do not correct for galactic extinction')
+
     parser.add_argument('--mask-file',type=str,default=None,required=False,
         help='Path to file to mask regions in lambda_OBS and lambda_RF. In file each line is: region_name region_min region_max (OBS or RF) [Angstrom]')
 
@@ -92,7 +95,7 @@ if __name__ == '__main__':
         args.mask_file = utils.read_mask_lines(args.mask_file)
 
     ### Read quasar catalog
-    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key)
+    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key,extinction=(not args.no_extinction_correction))
     print('Found {} quasars'.format(catQSO['Z'].size))
 
     if not args.nspec is None and args.nspec<catQSO['Z'].size:
@@ -105,7 +108,7 @@ if __name__ == '__main__':
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
-        dv_fine=args.dv_fine, nb_zmin=args.nb_zmin)
+        dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction))
 
     ### Send
     cpu_data = {}
@@ -140,6 +143,7 @@ if __name__ == '__main__':
             {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
             {'name':'NZMIN','value':args.nb_zmin,'comment':'Number of redshift minima too inspect with a fine grid'},
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
+            {'name':'GALEXT','value':(not args.no_extinction_correction),'comment':'Correct for Galactic extinction'},
             ]
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
