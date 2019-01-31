@@ -145,7 +145,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
 
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None,
-        lambda_min=None, lambda_max=None, cutANDMASK=True
+        lambda_min=None, lambda_max=None, cutANDMASK=True,
         veto_lines=None, flux_calib=None, ivar_calib=None):
     """
 
