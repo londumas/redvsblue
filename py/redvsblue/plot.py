@@ -54,10 +54,10 @@ def plot_PCA(path,dwave_side=85):
         if ln=='PCA': continue
         plt.plot(ll,fl[i,:],linewidth=2,color='black')
         x = sp.linspace(lv-85,lv+85,2*85*10)
-        y = qso_pca[0](x)
+        y = qso_pca[i](x)
         plt.fill_between(x,y,alpha=0.8)
-        plt.plot([lv,lv],[0.,qso_pca[0](lv)],linewidth=2,alpha=0.8,color='red')
-        plt.xlabel(r'$\lambda_{\mathrm{Obs.}}\,[\mathrm{\AA}]$',fontsize=20)
+        plt.plot([lv,lv],[0.,qso_pca[i](lv)],linewidth=2,alpha=0.8,color='red')
+        plt.xlabel(r'$\lambda_{\mathrm{R.F.}}\,[\mathrm{\AA}]$',fontsize=20)
         plt.ylabel(r'$f_{\mathrm{PCA,'+str(i)+'}}$',fontsize=20)
         plt.grid()
         plt.show()
