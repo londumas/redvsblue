@@ -11,8 +11,6 @@ try:
 except ImportError:
     import builtins as __builtin__
 
-import redvsblue.constants
-
 def print(*args, **kwds):
     __builtin__.print(*args,**kwds)
     sys.stdout.flush()
