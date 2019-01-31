@@ -21,7 +21,7 @@ def targetid2platemjdfiber(targetid):
     fiber = targetid % 10000
     mjd = (targetid // 10000) % 100000
     plate = (targetid // (10000 * 100000))
-    return (plate, mjd, fiber)
+    return plate, mjd, fiber
 
 
 def fit_spec(lamRF, flux, ivar, qso_pca=None):
