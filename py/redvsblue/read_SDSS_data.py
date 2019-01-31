@@ -269,7 +269,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
-    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=100, deg_legendre=4,
+    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True):
     """
 

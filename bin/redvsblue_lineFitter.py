@@ -24,6 +24,9 @@ if __name__ == '__main__':
     parser.add_argument('--drq', type=str, default=None, required=True,
         help='Catalog of objects in DRQ format')
 
+    parser.add_argument('--qso-pca',type=str,default=None,required=True,
+        help='Path to quasar PCA')
+
     parser.add_argument('--z-key', type=str, default='Z', required=False,
         help='Name of the key giving redshifts in drq')
 
@@ -33,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--lambda-max',type=float,default=10000.,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
-    parser.add_argument('--dwave-side',type=int,default=85,required=False,
+    parser.add_argument('--dwave-side',type=float,default=85.,required=False,
         help='Wavelength interval on both side of the line [Angstrom]')
 
     parser.add_argument('--npix-min',type=int,default=10,required=False,
@@ -50,9 +53,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--dv-fine',type=float,default=10.,required=False,
         help='Velocity grid for the fine determination of the minimum [km/s]')
-
-    parser.add_argument('--qso-pca',type=str,default=None,required=True,
-        help='Path to quasar PCA')
 
     parser.add_argument('--sigma-smooth',type=int,default=2,required=False,
         help='Smoothing kernel sigma for the PCA, in number of points')
@@ -135,15 +135,30 @@ if __name__ == '__main__':
     ### Save
     out = fitsio.FITS(args.out,'rw',clobber=True)
 
-    head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
+    if args.mask_file is None:
+        args.mask_file = ''
+    if args.flux_calib is None:
+        args.flux_calib = ''
+    if args.ivar_calib is None:
+        args.ivar_calib = ''
+
+    head = [ {'name':'DRQ','value':args.drq.split('/')[-1],'comment':'Object catalog with redshift prior'},
+            {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
+            {'name':'LAMMIN','value':args.lambda_min,'comment':'Lower limit on observed wavelength [Angstrom]'},
+            {'name':'LAMMAX','value':args.lambda_max,'comment':'Upper limit on observed wavelength [Angstrom]'},
             {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [Angstrom]'},
+            {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
+            {'name':'NZMIN','value':args.nb_zmin,'comment':'Number of redshift minima too inspect with a fine grid'},
             {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior on both side of the line [km/s]'},
             {'name':'DVCOARSE','value':args.dv_coarse,'comment':'Velocity grid for the coarse determination of the minimum [km/s]'},
             {'name':'DVFINE','value':args.dv_fine,'comment':'Velocity grid for the fine determination of the minimum [km/s]'},
-            {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
-            {'name':'NZMIN','value':args.nb_zmin,'comment':'Number of redshift minima too inspect with a fine grid'},
+            {'name':'QSOPCA','value':args.qso_pca.split('/')[-1],'comment':'Path to quasar PCA'},
+            {'name':'SMOOTH','value':args.sigma_smooth,'comment':'Smoothing kernel sigma for the PCA, in number of points'},
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             {'name':'GALEXT','value':(not args.no_extinction_correction),'comment':'Correct for Galactic extinction'},
+            {'name':'WMASK','value':args.mask_file.split('/')[-1],'comment':'Path to observed wavelength mask'},
+            {'name':'FCALIB','value':args.flux_calib.split('/')[-1],'comment':'Path to flux calibration'},
+            {'name':'ICALIB','value':args.ivar_calib.split('/')[-1],'comment':'Path to ivar calibration'},
             ]
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
@@ -175,6 +190,9 @@ if __name__ == '__main__':
 
         w = dic['NPIX']==0.
         dic['ZWARN'][w] |= ZW.NODATA
+
+        w = dic['NPIX']<=args.deg_legendre+len(qso_pca)
+        dic['ZWARN'][w] |= ZW.LITTLE_COVERAGE
 
         if not ln=='PCA':
             w = (dic['NPIXBLUE']==0) | (dic['NPIXBLUEBEST']==0)
