@@ -51,11 +51,11 @@ if __name__ == '__main__':
     parser.add_argument('--dv-fine',type=float,default=10.,required=False,
         help='Velocity grid for the fine determination of the minimum [km/s]')
 
-    parser.add_argument('--sigma-smooth',type=int,default=2,required=False,
-        help='Smoothing kernel sigma for the PCA, in number of points')
-
     parser.add_argument('--qso-pca',type=str,default=None,required=True,
         help='Path to quasar PCA')
+
+    parser.add_argument('--sigma-smooth',type=int,default=2,required=False,
+        help='Smoothing kernel sigma for the PCA, in number of points')
 
     parser.add_argument('--deg-legendre',type=int,default=3,required=False,
         help='Number of Legendre Polynoms')
