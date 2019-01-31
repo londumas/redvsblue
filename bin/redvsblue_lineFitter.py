@@ -36,6 +36,9 @@ if __name__ == '__main__':
     parser.add_argument('--lambda-max',type=float,default=10000.,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
+    parser.add_argument('--no-cut-ANDMASK', action='store_true', required=False,
+        help='Do not cut pixels with AND_MASK!=0')
+
     parser.add_argument('--dwave-side',type=float,default=85.,required=False,
         help='Wavelength interval on both side of the line [Angstrom]')
 
@@ -108,7 +111,8 @@ if __name__ == '__main__':
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
-        dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction))
+        dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
+        cutANDMASK=(not args.no_cut_ANDMASK) )
 
     ### Send
     cpu_data = {}
@@ -144,9 +148,10 @@ if __name__ == '__main__':
 
     head = [ {'name':'DRQ','value':args.drq.split('/')[-1],'comment':'Object catalog with redshift prior'},
             {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
-            {'name':'LAMMIN','value':args.lambda_min,'comment':'Lower limit on observed wavelength [Angstrom]'},
-            {'name':'LAMMAX','value':args.lambda_max,'comment':'Upper limit on observed wavelength [Angstrom]'},
-            {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [Angstrom]'},
+            {'name':'LAMMIN','value':args.lambda_min,'comment':'Lower limit on observed wavelength [A]'},
+            {'name':'LAMMAX','value':args.lambda_max,'comment':'Upper limit on observed wavelength [A]'},
+            {'name':'CUTAN','value':(not args.no_cut_ANDMASK),'comment':'Do not cut pixels with AND_MASK!=0'},
+            {'name':'DWAVE','value':args.dwave_side,'comment':'Wavelength interval on both side of the line [A]'},
             {'name':'NPIXMIN','value':args.npix_min,'comment':'Minimum number of pixels on each side of the line'},
             {'name':'NZMIN','value':args.nb_zmin,'comment':'Number of redshift minima too inspect with a fine grid'},
             {'name':'DVPRIOR','value':args.dv_prior,'comment':'Velocity difference box prior on both side of the line [km/s]'},

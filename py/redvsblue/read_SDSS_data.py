@@ -144,7 +144,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
         dic[k] = dic[k][w]
 
     return dic
-def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max=None, veto_lines=None, flux_calib=None, ivar_calib=None):
+def read_spec_spplate(p,m,fiber=None,path_spec=None,
+        lambda_min=None, lambda_max=None, cutANDMASK=True
+        veto_lines=None, flux_calib=None, ivar_calib=None):
     """
 
 
@@ -153,9 +155,14 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max
 
     h = fitsio.FITS(path)
     fl = h[0].read()
-    iv = h[1].read()*(h[2].read()==0)
+    iv = h[1].read()
+    iv *= iv>0.
+    an = h[2].read()
     head = h[0].read_header()
     h.close()
+
+    if cutANDMASK:
+        iv *= an==0
 
     ll = head['CRVAL1'] + head['CD1_1']*sp.arange(head['NAXIS1'])
     if head['DC-FLAG']:
@@ -183,8 +190,10 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None, lambda_min=None, lambda_max
         iv /= correction[None,:]
 
     if not fiber is None:
-        fl = fl[fiber-1]
-        iv = iv[fiber-1]
+        w = iv[fiber-1]>0.
+        ll = ll[w]
+        fl = fl[w,fiber-1]
+        iv = iv[w,fiber-1]
 
     return ll, fl, iv
 
@@ -270,14 +279,14 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
-    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True):
+    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True):
     """
 
     """
 
     ###
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
-        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
+        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,cutANDMASK=cutANDMASK)
 
     p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin)
 
