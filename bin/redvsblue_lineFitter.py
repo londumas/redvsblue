@@ -30,6 +30,12 @@ if __name__ == '__main__':
     parser.add_argument('--z-key', type=str, default='Z', required=False,
         help='Name of the key giving redshifts in drq')
 
+    parser.add_argument('--z-min',type=float,default=None,required=False,
+        help='Minimum redshift')
+
+    parser.add_argument('--z-max',type=float,default=None,required=False,
+        help='Maximum redshift')
+
     parser.add_argument('--lambda-min',type=float,default=3600.,required=False,
         help='Lower limit on observed wavelength [Angstrom]')
 
@@ -101,7 +107,9 @@ if __name__ == '__main__':
         args.mask_file = utils.read_mask_lines(args.mask_file)
 
     ### Read quasar catalog
-    catQSO = read_SDSS_data.read_cat(args.drq,zkey=args.z_key,extinction=(not args.no_extinction_correction))
+    catQSO = read_SDSS_data.read_cat(args.drq,
+        zmin=args.z_min, zmax=args.z_max, zkey=args.z_key,
+        extinction=(not args.no_extinction_correction))
     print('Found {} quasars'.format(catQSO['Z'].size))
 
     if not args.nspec is None and args.nspec<catQSO['Z'].size:
@@ -142,6 +150,10 @@ if __name__ == '__main__':
     ### Save
     out = fitsio.FITS(args.out,'rw',clobber=True)
 
+    if args.z_min is None:
+        args.z_min = False
+    if args.z_max is None:
+        args.z_max = False
     if args.mask_file is None:
         args.mask_file = ''
     if args.flux_calib is None:
@@ -151,6 +163,8 @@ if __name__ == '__main__':
 
     head = [ {'name':'DRQ','value':args.drq.split('/')[-1],'comment':'Object catalog with redshift prior'},
             {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
+            {'name':'ZMIN','value':args.z_min,'comment':'Minimum redshift'},
+            {'name':'ZMAX','value':args.z_max,'comment':'Maximum redshift'},
             {'name':'LAMMIN','value':args.lambda_min,'comment':'Lower limit on observed wavelength [A]'},
             {'name':'LAMMAX','value':args.lambda_max,'comment':'Upper limit on observed wavelength [A]'},
             {'name':'CUTAN','value':(not args.no_cut_ANDMASK),'comment':'Do not cut pixels with AND_MASK!=0'},
