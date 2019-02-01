@@ -69,15 +69,16 @@ if __name__ == '__main__':
 
     ###
     lines = constants.lines
-    zmin = 10.
-    zmax = 0.
-    for lv in lines.values():
-        if not args.z_min is None:
+    if args.z_min is None:
+        args.z_min = 10.
+        for lv in lines.values():
             args.z_min = min(args.z_min,args.lambda_min/lv['RED_MAX']-1.)
-        if not args.z_max is None:
+    if args.z_max is None:
+        args.z_max = 0.
+        for lv in lines.values():
             args.z_max = max(args.z_max,args.lambda_max/lv['BLUE_MIN']-1.)
-    print('zmin = {}'.format(zmin))
-    print('zmax = {}'.format(zmax))
+    print('zmin = {}'.format(args.z_min))
+    print('zmax = {}'.format(args.z_max))
 
     ###
     qso_pca = utils.read_PCA(args.qso_pca,dim=True,smooth=None)
