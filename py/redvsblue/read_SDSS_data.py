@@ -9,7 +9,7 @@ from redvsblue import utils
 from redvsblue.utils import print
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
-from redvsblue.fitz import minfit, find_minima
+from redvsblue.fitz import minfit, maxLine, find_minima
 
 counter = None
 lock = None
@@ -37,7 +37,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
     return mig.values['a0']*model[0]
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
-    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3):
+    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1):
     """
 
     """
@@ -87,15 +87,31 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     idx_min = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
     zPCA, zerr, zwarn, fval = results[idx_min]
 
+    ### Observed wavelength of maximum of line
     if line!='PCA':
-        ### Observed wavelength of maximum of line
+
+        ### Get coefficient of the model
         model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
         p_zchi2_one(model)
+
+        ### Get finer model
+        tlam = sp.arange(lam.min(), lam.max(), dwave_model)
+        tlegendre = sp.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(legendre.shape[1])]).T
+        model = sp.append( sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T,tlegendre,axis=1)
         model = model.dot(zcoeff)
+
+        ### Find min
         idxmin = sp.argmax(model)
-        lLine = lam[idxmin]
         if (idxmin<=1) | (idxmin>=model.size-2):
             zwarn |= ZW.Z_FITLIMIT
+
+        tresult = maxLine(tlam[idxmin-1:idxmin+2],model[idxmin-1:idxmin+2])
+        if tresult is None:
+            zwarn |= ZW.BAD_MINFIT
+            lLine = tlam[idxmin]
+        else:
+            zwarn |= tresult[3]
+            lLine = tresult[0]
     else:
         lLine = -1.
 
@@ -192,8 +208,8 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None,
     if not fiber is None:
         w = iv[fiber-1]>0.
         ll = ll[w]
-        fl = fl[w,fiber-1]
-        iv = iv[w,fiber-1]
+        fl = fl[fiber-1,w]
+        iv = iv[fiber-1,w]
 
     return ll, fl, iv
 
@@ -316,8 +332,6 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
         zs = catQSO['Z'][w]
         if extinction:
             extg = catQSO['G_EXTINCTION'][w]
-        legendre = sp.array([scipy.special.legendre(i)( (lam-lam.min())/(lam.max()-lam.min())*2.-1. ) for i in range(deg_legendre)])
-        legendre = legendre.T
         wfl = fl*iv
 
         for i in range(w.sum()):
@@ -342,7 +356,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             Dz = utils.get_dz(dv_prior,z)
             dz = utils.get_dz(dv_coarse,z)
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
-            modelpca = sp.array([ sp.append(sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in zrange ])
+            modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
 
             data[t] = { 'ZPRIOR':z }
             for ln, lv in lines.items():
@@ -357,8 +371,10 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>0:
+                    legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                    tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
-                        lam[w], tfl[w], tiv[w], twfl[w], modelpca[:,w,:], legendre[w,:], zrange, ln)
+                        lam[w], tfl[w], tiv[w], twfl[w], tmodelpca, legendre, zrange, ln)
 
                 if (not ln=='PCA') and (valline['ZLINE']!=-1.):
                     w = tiv>0.
