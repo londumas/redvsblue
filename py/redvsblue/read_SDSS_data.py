@@ -36,7 +36,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
     return mig.values['a0']*model[0]
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
-    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=True):
+    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=False):
     """
 
     """
@@ -300,7 +300,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
-    correct_lya=True):
+    correct_lya=False):
     """
 
     """
