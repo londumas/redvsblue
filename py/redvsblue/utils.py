@@ -114,7 +114,7 @@ def transmission_Lyman(zObj,lObs):
     '''
 
     lRF = lObs/(1.+zObj)
-    T   = sp.ones(lObs.size)
+    T = sp.ones(lObs.size)
 
     for l in Lyman_series.keys():
         w = lRF<Lyman_series[l]['line']
