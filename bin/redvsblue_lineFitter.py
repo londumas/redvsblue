@@ -75,6 +75,9 @@ if __name__ == '__main__':
     parser.add_argument('--no-extinction-correction', action='store_true', required=False,
         help='Do not correct for galactic extinction')
 
+    parser.add_argument('--lya-correction', action='store_true', required=False,
+        help='Correct for Lyman-alpha absorption')
+
     parser.add_argument('--mask-file',type=str,default=None,required=False,
         help='Path to file to mask regions in lambda_OBS and lambda_RF. In file each line is: region_name region_min region_max (OBS or RF) [Angstrom]')
 
@@ -123,7 +126,7 @@ if __name__ == '__main__':
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
         dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
-        cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model )
+        cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model, correct_lya=args.lya_correction )
 
     ### Send
     cpu_data = {}
@@ -179,6 +182,7 @@ if __name__ == '__main__':
             {'name':'SMOOTH','value':args.sigma_smooth,'comment':'Smoothing kernel sigma for the PCA, in number of points'},
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             {'name':'GALEXT','value':(not args.no_extinction_correction),'comment':'Correct for Galactic extinction'},
+            {'name':'LYAABS','value':args.lya_correction,'comment':'Correct for Lya absorption'},
             {'name':'WMASK','value':args.mask_file.split('/')[-1],'comment':'Path to observed wavelength mask'},
             {'name':'FCALIB','value':args.flux_calib.split('/')[-1],'comment':'Path to flux calibration'},
             {'name':'ICALIB','value':args.ivar_calib.split('/')[-1],'comment':'Path to ivar calibration'},

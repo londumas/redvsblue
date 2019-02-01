@@ -6,6 +6,8 @@ import scipy.ndimage
 import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 
+from redvsblue.constants import Lyman_series
+
 try:
     import __builtin__
 except ImportError:
@@ -99,6 +101,28 @@ def read_mask_lines(path):
     usr_mask_obs = sp.asarray(usr_mask_obs)
 
     return usr_mask_obs
+def transmission_Lyman(zObj,lObs):
+    '''Calculate the transmitted flux fraction from the Lyman series
+    This returns the transmitted flux fraction:
+        1 -> everything is transmitted (medium is transparent)
+        0 -> nothing is transmitted (medium is opaque)
+    Args:
+        zObj (float): Redshift of object
+        lObs (array of float): wavelength grid
+    Returns:
+        array of float: transmitted flux fraction
+    '''
+
+    lRF = lObs/(1.+zObj)
+    T = sp.ones(lObs.size)
+
+    for l in Lyman_series.keys():
+        w = lRF<Lyman_series[l]['line']
+        zpix = lObs[w]/Lyman_series[l]['line']-1.
+        tauEff = Lyman_series[l]['A']*(1.+zpix)**Lyman_series[l]['B']
+        T[w] *= sp.exp(-tauEff)
+
+    return T
 def unred(wave, ebv, R_V=3.1, LMC2=False, AVGLMC=False):
     '''
     https://github.com/sczesla/PyAstronomy

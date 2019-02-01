@@ -5,8 +5,7 @@ from functools import partial
 import scipy as sp
 import scipy.special
 
-from redvsblue import utils
-from redvsblue.utils import print
+from redvsblue.utils import print, get_dz, unred, transmission_Lyman
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
 from redvsblue.fitz import minfit, maxLine, find_minima
@@ -37,7 +36,7 @@ def fit_spec(lamRF, flux, ivar, qso_pca=None):
 
     return mig.values['a0']*model[0]
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
-    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1):
+    qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=False):
     """
 
     """
@@ -63,10 +62,13 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             zwarn |= ZW.Z_FITLIMIT
 
         ### Fine scan
-        Dz = utils.get_dz(dv_coarse,zPCA)
-        dz = utils.get_dz(dv_fine,zPCA)
+        Dz = get_dz(dv_coarse,zPCA)
+        dz = get_dz(dv_fine,zPCA)
         tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,1+int(round(4.*Dz/dz)))
-        tchi2 = sp.array([ p_zchi2_one(sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1)) for tz in tzrange ])
+        tmodelpca = sp.array([ sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in tzrange ])
+        if correct_lya:
+            tmodelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
+        tchi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
         tidxmin = 2+sp.argmin(tchi2[2:-2])
 
         if (tchi2==9e99).sum()>0:
@@ -92,6 +94,8 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
 
         ### Get coefficient of the model
         model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
+        if correct_lya:
+            model[:,0] *= transmission_Lyman(zPCA,lam)
         p_zchi2_one(model)
 
         ### Get finer model
@@ -281,7 +285,7 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
                     valline[side+'_NB'] = w.sum()
                     if w.sum()>=2:
                         model = p_fit_spec(lamRF[w], tfl[w], tiv[w])
-                        valline[side+'_VAR'] = utils.weighted_var(tfl[w]/model-1.,tiv[w])
+                        valline[side+'_VAR'] = weighted_var(tfl[w]/model-1.,tiv[w])
                         valline[side+'_SNR'] = ( (tfl[w]*tiv[w])**2 ).mean()
                     else:
                         valline[side+'_VAR'] = 0.
@@ -295,7 +299,8 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
     return data
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
-    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1):
+    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
+    correct_lya=False):
     """
 
     """
@@ -304,7 +309,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
         veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,cutANDMASK=cutANDMASK)
 
-    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin, dwave_model=dwave_model)
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin,
+        dwave_model=dwave_model, correct_lya=correct_lya)
 
     ### get PLATE-MJD
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
@@ -343,20 +349,24 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             f = fibs[i]
             z = zs[i]
 
-            tfl = fl[f-1]
-            tiv = iv[f-1]
-            twfl = wfl[f-1]
-            lamRF = lam/(1.+z)
+            w = iv[f-1]>0.
+            tlam = lam[w]
+            tfl = fl[f-1,w]
+            tiv = iv[f-1,w]
+            twfl = wfl[f-1,w]
+            lamRF = tlam/(1.+z)
             if extinction:
-                unred = utils.unred(lam,extg[i])
-                tfl /= unred
-                tiv *= unred**2
-                twfl *= unred
+                tunred = unred(tlam,extg[i])
+                tfl /= tunred
+                tiv *= tunred**2
+                twfl *= tunred
 
-            Dz = utils.get_dz(dv_prior,z)
-            dz = utils.get_dz(dv_coarse,z)
+            Dz = get_dz(dv_prior,z)
+            dz = get_dz(dv_coarse,z)
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
-            modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+            modelpca = sp.array([ sp.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+            if correct_lya:
+                modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
 
             data[t] = { 'ZPRIOR':z }
             for ln, lv in lines.items():
@@ -371,14 +381,14 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>1:
-                    legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                    legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
                     tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
-                        lam[w], tfl[w], tiv[w], twfl[w], tmodelpca, legendre, zrange, ln)
+                        tlam[w], tfl[w], tiv[w], twfl[w], tmodelpca, legendre, zrange, ln)
 
                 if (not ln=='PCA') and (valline['ZLINE']!=-1.):
                     w = tiv>0.
-                    tlamRF = lam*lv/valline['ZLINE']
+                    tlamRF = tlam*lv/valline['ZLINE']
                     valline['NPIXBLUEBEST'] = ( w & (tlamRF>lv-dwave_side) & (tlamRF<lv) ).sum()
                     valline['NPIXREDBEST'] = ( w & (tlamRF>=lv) & (tlamRF<lv+dwave_side) ).sum()
                     valline['NPIXBEST'] = (w & (tlamRF>lv-dwave_side) & (tlamRF<lv+dwave_side) ).sum()
