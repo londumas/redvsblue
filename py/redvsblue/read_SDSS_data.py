@@ -5,7 +5,7 @@ from functools import partial
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import print, get_dz, unred, transmission_Lyman
+from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
 from redvsblue.fitz import minfit, maxLine, find_minima
@@ -23,18 +23,14 @@ def targetid2platemjdfiber(targetid):
     return plate, mjd, fiber
 
 
-def fit_spec(lamRF, flux, ivar, qso_pca=None):
+def fit_spec(z, lam, flux, weight, wflux, qso_pca=None):
 
-    model = sp.array([ el(lamRF) for el in qso_pca ])
-    def chi2(a0):
-        y = flux-a0*model[0]
-        return (y**2*ivar).sum()
+    zcoeff = sp.zeros(len(qso_pca))
+    model = sp.array([ el(lam/(1.+z)) for el in qso_pca ]).T
+    _zchi2_one(model, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
+    model = model.dot(zcoeff)
 
-    a0 = abs(flux.mean())
-    mig = iminuit.Minuit(chi2,a0=a0,error_a0=a0/2.,errordef=1.,print_level=-1)
-    mig.migrad()
-
-    return mig.values['a0']*model[0]
+    return model
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
     qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=False):
     """
@@ -221,34 +217,22 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None,
 
 
 
-
-
-
-def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', lambda_min=3600., lambda_max=7235.,
-    veto_lines=None, flux_calib=None, ivar_calib=None, nspec=None):
-    """
+def get_VAR_SNR(catQSO, path_spec, lines, qso_pca, lambda_min=None, lambda_max=None,
+    veto_lines=None, flux_calib=None, ivar_calib=None, extinction=True, cutANDMASK=True):
 
     """
 
-    ### Read quasar catalog
-    catQSO = read_cat(DRQ,zmin,zmax,zkey)
-    print('Found {} quasars'.format(catQSO['Z'].size))
+    """
 
     ###
     p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
-        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib)
+        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,cutANDMASK=cutANDMASK)
 
     p_fit_spec = partial(fit_spec, qso_pca=qso_pca)
 
-    ### Sort PLATE-MJD
+    ### get PLATE-MJD
     pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
     upm = sp.sort(sp.unique(pm))
-    npm = sp.bincount(pm)
-    w = npm>0
-    npm = npm[w]
-    w = sp.argsort(npm)
-    upm = upm[w][::-1]
-    npm = npm[w][::-1]
 
     data = {}
     for tpm in upm:
@@ -259,32 +243,50 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
         try:
             lam, fl, iv = p_read_spec_spplate(p,m)
         except OSError:
-            print('WARNING: Can not find PLATE={}, MJD={}'.format(p,m))
+            path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
+            print('WARNING: Can not find PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
-        print('{}: read {} objects from PLATE={}, MJD={}'.format(len(data.keys()),w.sum(),p,m))
 
-        thids = catQSO['THING_ID'][w]
+        if lam.size==0:
+            print('WARNING: No data in PLATE={}, MJD={}: {}'.format(p,m,path))
+            continue
+
+        thids = catQSO['TARGETID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
+        if extinction:
+            extg = catQSO['G_EXTINCTION'][w]
+        wfl = fl*iv
 
         for i in range(w.sum()):
+            print("\rcomputing xi: {}%".format(round(counter.value*100./ndata,2)),end="")
+            with lock:
+                counter.value += 1
 
             t = thids[i]
             f = fibs[i]
             z = zs[i]
 
-            tfl = fl[f-1]
-            tiv = iv[f-1]
-            lamRF = lam/(1.+z)
-            data[t] = { 'Z':z }
+            w = iv[f-1]>0.
+            tlam = lam[w]
+            tfl = fl[f-1,w]
+            tiv = iv[f-1,w]
+            twfl = wfl[f-1,w]
+            lamRF = tlam/(1.+z)
+            if extinction:
+                tunred = unred(tlam,extg[i])
+                tfl /= tunred
+                tiv *= tunred**2
+                twfl *= tunred
 
+            data[t] = { 'Z':z }
             for ln, lv in lines.items():
                 valline = {}
                 for side in ['BLUE','RED']:
                     w = (tiv>0.) & (lamRF>lv[side+'_MIN']) & (lamRF<lv[side+'_MAX'])
                     valline[side+'_NB'] = w.sum()
-                    if w.sum()>=2:
-                        model = p_fit_spec(lamRF[w], tfl[w], tiv[w])
+                    if w.sum()>2*len(qso_pca):
+                        model = p_fit_spec(z, tlam[w], tfl[w], tiv[w], twfl[w])
                         valline[side+'_VAR'] = weighted_var(tfl[w]/model-1.,tiv[w])
                         valline[side+'_SNR'] = ( (tfl[w]*tiv[w])**2 ).mean()
                     else:
@@ -292,11 +294,9 @@ def get_VAR_SNR(DRQ, path_spec, lines, qso_pca, zmin=0., zmax=10., zkey='Z_VI', 
                         valline[side+'_SNR'] = 0.
                 data[t][ln] = valline
 
-        if not nspec is None and len(data.keys())>nspec:
-            print('{}:'.format(len(data.keys())))
-            return data
-
     return data
+
+
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
