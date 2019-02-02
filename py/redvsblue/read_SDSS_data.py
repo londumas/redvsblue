@@ -1,6 +1,5 @@
 from __future__ import print_function
 import fitsio
-import iminuit
 from functools import partial
 import scipy as sp
 import scipy.special
