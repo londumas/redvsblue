@@ -297,10 +297,7 @@ def read_spec_spec(p,m,f,path_spec=None,
     if not veto_lines is None:
         for lmin,lmax in veto_lines:
             w &= (ll<lmin) | (ll>lmax)
-
-    ll = ll[w]
-    fl = fl[w]
-    iv = iv[w]
+    iv[~w] = 0.
 
     if not flux_calib is None:
         correction = flux_calib(ll)
@@ -521,30 +518,48 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         if extinction:
             extg = catQSO['G_EXTINCTION'][i]
 
-        lam = None
+        ll = None
         fl = None
         iv = None
         for tobs in catQSO['ALLOBS'][i]:
             p, m, f = targetid2platemjdfiber(tobs)
             tlam, tfl, tiv = p_read_spec_spec(p,m,f)
-            w = tiv>0.
-            if lam is None:
-                lam = tlam[w]
-                fl = tfl[w]
-                iv = tiv[w]
+            if ll is None:
+                ll = sp.log10(tlam)
+                fl = tfl
+                iv = tiv
             else:
-                lam = sp.append(lam,tlam[w])
-                fl = sp.append(fl,tfl[w])
-                iv = sp.append(iv,tiv[w])
+                ll = sp.append(ll,sp.log10(tlam))
+                fl = sp.append(fl,tfl)
+                iv = sp.append(iv,tiv)
+
+        dll = 1e-4
+        lmin = ll.min()
+        bins = sp.floor((ll-lmin)/dll+0.5).astype(int)
+        ll = lmin + bins*dll
+        w = ll>=sp.log10(lambda_min)
+        w &= ll<sp.log10(lambda_max)
+        w &= iv>0.
+        bins = bins[w]
+        ll = ll[w]
+        fl = fl[w]
+        iv = iv[w]
+
+        cll = lmin + sp.arange(bins.max()+1)*dll
+        cfl = sp.zeros(bins.max()+1)
+        civ = sp.zeros(bins.max()+1)
+        ccfl = sp.bincount(bins,weights=iv*fl)
+        cciv = sp.bincount(bins,weights=iv)
+        cfl[:len(ccfl)] += ccfl
+        civ[:len(cciv)] += cciv
+        w = civ>0.
+        lam = 10**(cll[w])
+        fl = cfl[w]/civ[w]
+        iv = civ[w]
 
         if lam.size==0:
             print('WARNING: No data for THING_ID = {}'.format(thids))
             continue
-
-        w = sp.argsort(lam)
-        lam = lam[w]
-        fl = fl[w]
-        iv = iv[w]
 
         wfl = fl*iv
         lamRF = lam/(1.+z)
