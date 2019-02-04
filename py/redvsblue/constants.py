@@ -23,3 +23,6 @@ emissionLines = {
     'CIV'    : 1549.492,
     'LYA'    : 1215.67,
 }
+emissionLinesEW = {
+    '0II' : {'LINE':3728.5, 'ON_MIN':3722. , 'ON_MAX':3736. , 'OFF_MIN':3700., 'OFF_MAX':3720.}
+}

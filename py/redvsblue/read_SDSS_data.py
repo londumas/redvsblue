@@ -294,7 +294,85 @@ def get_VAR_SNR(catQSO, path_spec, lines, qso_pca, lambda_min=None, lambda_max=N
                 data[t][ln] = valline
 
     return data
+def get_EW(catQSO, path_spec, lines, lambda_min=None, lambda_max=None,
+    veto_lines=None, flux_calib=None, ivar_calib=None, extinction=True, cutANDMASK=True):
 
+    """
+
+    """
+
+    ###
+    p_read_spec_spplate = partial(read_spec_spplate, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
+        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,cutANDMASK=cutANDMASK)
+
+    ### get PLATE-MJD
+    pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
+    upm = sp.sort(sp.unique(pm))
+
+    data = {}
+    for tpm in upm:
+        p = tpm//100000
+        m = tpm%100000
+        w = pm==tpm
+
+        try:
+            lam, fl, iv = p_read_spec_spplate(p,m)
+        except OSError:
+            path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
+            print('WARNING: Can not find PLATE={}, MJD={}: {}'.format(p,m,path))
+            continue
+
+        if lam.size==0:
+            print('WARNING: No data in PLATE={}, MJD={}: {}'.format(p,m,path))
+            continue
+
+        thids = catQSO['TARGETID'][w]
+        fibs = catQSO['FIBERID'][w]
+        zs = catQSO['Z'][w]
+        if extinction:
+            extg = catQSO['G_EXTINCTION'][w]
+        wfl = fl*iv
+
+        for i in range(w.sum()):
+            print("\rcomputing xi: {}%".format(round(counter.value*100./ndata,2)),end="")
+            with lock:
+                counter.value += 1
+
+            t = thids[i]
+            f = fibs[i]
+            z = zs[i]
+
+            w = iv[f-1]>0.
+            tlam = lam[w]
+            tfl = fl[f-1,w]
+            tiv = iv[f-1,w]
+            twfl = wfl[f-1,w]
+            lamRF = tlam/(1.+z)
+            if extinction:
+                tunred = unred(tlam,extg[i])
+                tfl /= tunred
+                tiv *= tunred**2
+                twfl *= tunred
+
+            data[t] = { 'Z':z }
+            for ln, lv in lines.items():
+                valline = { 'F_ON':0., 'F_OFF':0., 'F_LINE':0., 'NPIX_ON':0, 'NPIX_OFF':0 }
+
+                w = (tiv>0.) & (lamRF>=lv['ON_MIN']) & (lamRF<=lv['ON_MAX'])
+                valline['NPIX_ON'] = w.sum()
+                if valline['NPIX_ON']>0:
+                    valline['F_ON'] = tfl[w].mean()
+
+                w = (tiv>0.) & (lamRF>=lv['OFF_MIN']) & (lamRF<=lv['OFF_MAX'])
+                valline['NPIX_OFF'] = w.sum()
+                if valline['NPIX_ON']>0:
+                    valline['F_OFF'] = tfl[w].mean()
+
+                valline['F_LINE'] = valline['F_ON']-valline['F_OFF']
+
+                data[t][ln] = valline
+
+    return data
 
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
