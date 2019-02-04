@@ -147,10 +147,6 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
     print('Found {} quasars'.format(dic['Z'].size))
 
-    w = sp.in1d(dic['PLATE'],[7339])
-    for k in dic.keys():
-        dic[k] = dic[k][w]
-
     w = sp.argsort(dic['TARGETID'])
     for k in dic.keys():
         dic[k] = dic[k][w]
