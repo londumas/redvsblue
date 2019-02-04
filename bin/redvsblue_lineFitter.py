@@ -87,6 +87,9 @@ if __name__ == '__main__':
     parser.add_argument('--ivar-calib',type=str,default=None,required=False,
         help='Path to previously produced do_delta.py file to correct for multiplicative errors in the pipeline inverse variance calibration')
 
+    parser.add_argument('--stack-obs', action='store_true', required=False,
+        help='Stack all valid observations')
+
     parser.add_argument('--nspec', type=int, default=None, required=False,
         help='Maximum number of spectra to read')
 
@@ -112,31 +115,42 @@ if __name__ == '__main__':
     ### Read quasar catalog
     catQSO = read_SDSS_data.read_cat(args.drq,
         zmin=args.z_min, zmax=args.z_max, zkey=args.z_key,
-        extinction=(not args.no_extinction_correction))
-    print('Found {} quasars'.format(catQSO['Z'].size))
-
-    if not args.nspec is None and args.nspec<catQSO['Z'].size:
-        for k in catQSO.keys():
-            catQSO[k] = catQSO[k][:args.nspec]
-        print('Limit to {} quasars'.format(catQSO['Z'].size))
+        extinction=(not args.no_extinction_correction),
+        stack_obs=args.stack_obs,in_dir=args.in_dir, nspec=args.nspec)
 
     ### Read spectra
-    p_fit_line = partial(read_SDSS_data.fit_line, path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
+    if args.stack_obs:
+        fit_line_name = 'fit_line_spec'
+    else:
+        fit_line_name = 'fit_line_spplate'
+    p_fit_line = partial( getattr(read_SDSS_data,fit_line_name), path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
         dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
         cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model, correct_lya=args.lya_correction )
 
+
     ### Send
     cpu_data = {}
-    pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
-    upm = sp.sort(sp.unique(pm))
-    for tupm in upm:
-        w = pm==tupm
-        cpu_data[tupm] = copy.deepcopy(catQSO)
-        for k in cpu_data[tupm].keys():
-            cpu_data[tupm][k] = cpu_data[tupm][k][w]
+    if args.stack_obs:
+        nbperslice = 1+int(catQSO['Z'].size//args.nproc)
+        nbdistributed = 0
+        for i in range(args.nproc+1):
+            cpu_data[i] = copy.deepcopy(catQSO)
+            for k in catQSO.keys():
+                cpu_data[i][k] = cpu_data[i][k][nbperslice*i:nbperslice*(i+1)]
+            nbdistributed += cpu_data[i]['Z'].size
+            if nbdistributed>=catQSO['Z'].size: break
+    else:
+        pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
+        upm = sp.sort(sp.unique(pm))
+        for tupm in upm:
+            w = pm==tupm
+            cpu_data[tupm] = copy.deepcopy(catQSO)
+            for k in catQSO.keys():
+                cpu_data[tupm][k] = cpu_data[tupm][k][w]
+
     read_SDSS_data.ndata = catQSO['Z'].size
     read_SDSS_data.counter = Value('i',0)
     read_SDSS_data.lock = Lock()
@@ -186,9 +200,11 @@ if __name__ == '__main__':
             {'name':'WMASK','value':args.mask_file.split('/')[-1],'comment':'Path to observed wavelength mask'},
             {'name':'FCALIB','value':args.flux_calib.split('/')[-1],'comment':'Path to flux calibration'},
             {'name':'ICALIB','value':args.ivar_calib.split('/')[-1],'comment':'Path to ivar calibration'},
+            {'name':'STACKOBS','value':args.stack_obs,'comment':'Stack all good observations'},
             ]
     dic = {}
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
+    dic['THING_ID'] = sp.array([ data[t]['THING_ID'] for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
 
     tw = sp.argsort(dic['TARGETID'])

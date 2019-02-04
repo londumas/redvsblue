@@ -1,8 +1,10 @@
 from __future__ import print_function
+import os
 import fitsio
 from functools import partial
 import scipy as sp
 import scipy.special
+import glob
 
 from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
 from redvsblue.zwarning import ZWarningMask as ZW
@@ -122,7 +124,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
-def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=False,in_dir=None,nspec=None):
     """
 
     """
@@ -132,9 +134,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
     h = fitsio.FITS(pathData)
     h[1].read_header()
     if 'MJD' in h[1].get_colnames():
-        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID'}
+        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID' }
     else:
-        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER'}
+        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'THING_ID' }
     for k,v in lst.items():
         dic[k] = h[1][v][:]
     dic['Z'] = h[1][zkey][:]
@@ -144,6 +146,10 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
 
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
     print('Found {} quasars'.format(dic['Z'].size))
+
+    w = sp.in1d(dic['PLATE'],[7339])
+    for k in dic.keys():
+        dic[k] = dic[k][w]
 
     w = sp.argsort(dic['TARGETID'])
     for k in dic.keys():
@@ -157,6 +163,58 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True):
         w &= dic['Z']<zmax
     for k in dic.keys():
         dic[k] = dic[k][w]
+
+    print('Found {} quasars'.format(dic['Z'].size))
+    if not nspec is None and nspec<dic['Z'].size:
+        for k in dic.keys():
+            dic[k] = dic[k][:nspec]
+        print('Limit to {} quasars'.format(dic['Z'].size))
+
+    if stack_obs:
+
+        _, w = sp.unique(dic['THING_ID'],return_index=True)
+        for k in dic.keys():
+            dic[k] = dic[k][w]
+        print('Get unique THING_ID: {}'.format(dic['Z'].size))
+
+        w = sp.argsort(dic['THING_ID'])
+        for k in dic.keys():
+            dic[k] = dic[k][w]
+
+        spall = glob.glob(os.path.expandvars(in_dir+'/spAll-*.fits'))
+        assert len(spall)==1
+
+        h = fitsio.FITS(spall[0])
+        print('INFO: reading spAll from {}'.format(spall[0]))
+        thid_spall = h[1]['THING_ID'][:]
+        plate_spall = h[1]['PLATE'][:]
+        mjd_spall = h[1]['MJD'][:]
+        fid_spall = h[1]['FIBERID'][:]
+        qual_spall = h[1]['PLATEQUALITY'][:]
+        zwarn_spall = h[1]['ZWARNING'][:]
+        h.close()
+
+        w = sp.in1d(thid_spall, dic['THING_ID']) & (qual_spall == b'good')
+        ## Removing spectra with the following ZWARNING bits set:
+        ## SKY, LITTLE_COVERAGE, UNPLUGGED, BAD_TARGET, NODATA
+        ## https://www.sdss.org/dr14/algorithms/bitmasks/#ZWARNING
+        for zwarnbit in [0,1,7,8,9]:
+            w &= (zwarn_spall&2**zwarnbit)==0
+        thid = thid_spall[w]
+        plate = plate_spall[w]
+        mjd = mjd_spall[w]
+        fid = fid_spall[w]
+        targetid = platemjdfiber2targetid(plate.astype('int64'),mjd.astype('int64'),fid.astype('int64'))
+
+        print('INFO: # unique objs: ',dic['THING_ID'].size)
+        print('INFO: # unique objs in spAll: ',sp.unique(thid).size)
+        print('INFO: # spectra: ',w.sum())
+
+        w = sp.argsort(thid)
+        thid = thid[w]
+        targetid = targetid[w]
+
+        dic['ALLOBS'] = [ sp.sort(targetid[thid==t]) for t in dic['THING_ID'] ]
 
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None,
@@ -211,7 +269,52 @@ def read_spec_spplate(p,m,fiber=None,path_spec=None,
         iv = iv[fiber-1,w]
 
     return ll, fl, iv
+def read_spec_spec(p,m,f,path_spec=None,
+        lambda_min=None, lambda_max=None, cutANDMASK=True,
+        veto_lines=None, flux_calib=None, ivar_calib=None):
+    """
 
+
+    """
+    path = path_spec+'/spectra/lite/{}/spec-{}-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m,str(f).zfill(4))
+
+    h = fitsio.FITS(path)
+    fl = h['COADD']['FLUX'][:]
+    iv = h['COADD']['IVAR'][:]
+    an = h['COADD']['AND_MASK'][:]
+    ll = h['COADD']['LOGLAM'][:]
+    head = h[0].read_header()
+    h.close()
+
+    iv *= iv>0.
+    if cutANDMASK:
+        iv *= an==0
+
+    if head['DC-FLAG']:
+        ll = 10**ll
+
+    w = sp.ones(ll.size,dtype=bool)
+    if not lambda_min is None:
+        w &= ll>=lambda_min
+    if not lambda_max is None:
+        w &= ll<=lambda_max
+    if not veto_lines is None:
+        for lmin,lmax in veto_lines:
+            w &= (ll<lmin) | (ll>lmax)
+
+    ll = ll[w]
+    fl = fl[w]
+    iv = iv[w]
+
+    if not flux_calib is None:
+        correction = flux_calib(ll)
+        fl /= correction
+        iv *= correction**2
+    if not ivar_calib is None:
+        correction = ivar_calib(ll)
+        iv /= correction
+
+    return ll, fl, iv
 
 
 
@@ -296,7 +399,7 @@ def get_VAR_SNR(catQSO, path_spec, lines, qso_pca, lambda_min=None, lambda_max=N
     return data
 
 
-def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
     correct_lya=False):
@@ -332,7 +435,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             print('WARNING: No data in PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
 
-        thids = catQSO['TARGETID'][w]
+        targetids = catQSO['TARGETID'][w]
+        thids = catQSO['THING_ID'][w]
         fibs = catQSO['FIBERID'][w]
         zs = catQSO['Z'][w]
         if extinction:
@@ -344,7 +448,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             with lock:
                 counter.value += 1
 
-            t = thids[i]
+            t = targetids[i]
             f = fibs[i]
             z = zs[i]
 
@@ -367,7 +471,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             if correct_lya:
                 modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
 
-            data[t] = { 'ZPRIOR':z }
+            data[t] = { 'ZPRIOR':z, 'THING_ID':thids[i] }
             for ln, lv in lines.items():
                 valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
                 'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
@@ -393,5 +497,99 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                     valline['NPIXBEST'] = (w & (tlamRF>lv-dwave_side) & (tlamRF<lv+dwave_side) ).sum()
 
                 data[t][ln] = valline
+
+    return data
+def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+    veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
+    dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
+    correct_lya=False):
+    """
+
+    """
+
+    ###
+    p_read_spec_spec = partial(read_spec_spec, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
+        veto_lines=veto_lines, flux_calib=flux_calib, ivar_calib=ivar_calib,cutANDMASK=cutANDMASK)
+
+    p_fit_spec = partial(fit_spec_redshift, qso_pca=qso_pca, dv_coarse=dv_coarse, dv_fine=dv_fine, nb_zmin=nb_zmin,
+        dwave_model=dwave_model, correct_lya=correct_lya)
+
+    data = {}
+    for i, thids in enumerate(catQSO['THING_ID']):
+        print("\rcomputing xi: {}%".format(round(counter.value*100./ndata,2)),end="")
+        with lock:
+            counter.value += 1
+
+        t = catQSO['TARGETID'][i]
+        z = catQSO['Z'][i]
+        if extinction:
+            extg = catQSO['G_EXTINCTION'][i]
+
+        lam = None
+        fl = None
+        iv = None
+        for tobs in catQSO['ALLOBS'][i]:
+            p, m, f = targetid2platemjdfiber(tobs)
+            tlam, tfl, tiv = p_read_spec_spec(p,m,f)
+            w = tiv>0.
+            if lam is None:
+                lam = tlam[w]
+                fl = tfl[w]
+                iv = tiv[w]
+            else:
+                lam = sp.append(lam,tlam[w])
+                fl = sp.append(fl,tfl[w])
+                iv = sp.append(iv,tiv[w])
+
+        if lam.size==0:
+            print('WARNING: No data for THING_ID = {}'.format(thids))
+            continue
+
+        w = sp.argsort(lam)
+        lam = lam[w]
+        fl = fl[w]
+        iv = iv[w]
+
+        wfl = fl*iv
+        lamRF = lam/(1.+z)
+        if extinction:
+            tunred = unred(lam,extg)
+            fl /= tunred
+            iv *= tunred**2
+            wfl *= tunred
+
+        Dz = get_dz(dv_prior,z)
+        dz = get_dz(dv_coarse,z)
+        zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
+        modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+        if correct_lya:
+            modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,lam) for tz in zrange ])
+
+        data[t] = { 'ZPRIOR':z, 'THING_ID':thids }
+        for ln, lv in lines.items():
+            valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
+            'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
+
+            w = iv>0.
+            if not ln=='PCA':
+                valline['NPIXBLUE'] = ( w & (lamRF>lv-dwave_side) & (lamRF<lv) ).sum()
+                valline['NPIXRED'] = ( w & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
+                w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
+            valline['NPIX'] = w.sum()
+
+            if valline['NPIX']>1:
+                legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
+                valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
+                    lam[w], fl[w], iv[w], wfl[w], tmodelpca, legendre, zrange, ln)
+
+            if (not ln=='PCA') and (valline['ZLINE']!=-1.):
+                w = iv>0.
+                tlamRF = lam*lv/valline['ZLINE']
+                valline['NPIXBLUEBEST'] = ( w & (tlamRF>lv-dwave_side) & (tlamRF<lv) ).sum()
+                valline['NPIXREDBEST'] = ( w & (tlamRF>=lv) & (tlamRF<lv+dwave_side) ).sum()
+                valline['NPIXBEST'] = (w & (tlamRF>lv-dwave_side) & (tlamRF<lv+dwave_side) ).sum()
+
+            data[t][ln] = valline
 
     return data
