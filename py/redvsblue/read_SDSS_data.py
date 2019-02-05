@@ -537,7 +537,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
                 fl = sp.append(fl,tfl)
                 iv = sp.append(iv,tiv)
 
-        if ll.size==0:
+        if (ll is None) or (ll.size==0):
             print('WARNING: No data for THING_ID = {}'.format(thids))
             continue
 
