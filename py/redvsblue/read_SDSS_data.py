@@ -168,6 +168,10 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=
 
     if stack_obs:
 
+        w = dic['THING_ID']>0
+        for k in dic.keys():
+            dic[k] = dic[k][w]
+
         _, w = sp.unique(dic['THING_ID'],return_index=True)
         for k in dic.keys():
             dic[k] = dic[k][w]
