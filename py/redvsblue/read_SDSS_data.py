@@ -553,6 +553,10 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         fl = fl[w]
         iv = iv[w]
 
+        if ll.size==0:
+            print('WARNING: No data for THING_ID = {}'.format(thids))
+            continue
+
         cll = lmin + sp.arange(bins.max()+1)*dll
         cfl = sp.zeros(bins.max()+1)
         civ = sp.zeros(bins.max()+1)
