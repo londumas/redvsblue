@@ -3,6 +3,8 @@ import scipy as sp
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
+import redvsblue.constants
+
 def plot_flux_calibration(path):
     """
 
