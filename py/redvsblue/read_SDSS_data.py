@@ -124,7 +124,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
 
 
-def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=False,in_dir=None,nspec=None):
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=False,in_dir=None,nspec=None,rvextinction=3.793):
     """
 
     """
@@ -141,7 +141,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=
         dic[k] = h[1][v][:]
     dic['Z'] = h[1][zkey][:]
     if extinction:
-        dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
+        dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]/rvextinction
     h.close()
 
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
