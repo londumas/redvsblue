@@ -105,12 +105,15 @@ if __name__ == '__main__':
 
     ###
     qso_pca = utils.read_PCA(args.qso_pca,dim=True,smooth=args.sigma_smooth)
-    if not args.flux_calib is None:
-        args.flux_calib = utils.read_flux_calibration(args.flux_calib)
-    if not args.ivar_calib is None:
-        args.ivar_calib = utils.read_ivar_calibration(args.ivar_calib)
-    if not args.mask_file is None:
-        args.mask_file = utils.read_mask_lines(args.mask_file)
+    flux_calib = args.flux_calib
+    if not flux_calib is None:
+        flux_calib = utils.read_flux_calibration(flux_calib)
+    ivar_calib = args.ivar_calib
+    if not ivar_calib is None:
+        ivar_calib = utils.read_ivar_calibration(ivar_calib)
+    mask_file = args.mask_file
+    if not mask_file is None:
+        mask_file = utils.read_mask_lines(mask_file)
 
     ### Read quasar catalog
     catQSO = read_SDSS_data.read_cat(args.drq,
@@ -125,7 +128,7 @@ if __name__ == '__main__':
         fit_line_name = 'fit_line_spplate'
     p_fit_line = partial( getattr(read_SDSS_data,fit_line_name), path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
-        veto_lines=args.mask_file, flux_calib=args.flux_calib, ivar_calib=args.ivar_calib,
+        veto_lines=mask_file, flux_calib=flux_calib, ivar_calib=ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
         dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
         cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model, correct_lya=args.lya_correction )
