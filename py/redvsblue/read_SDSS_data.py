@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 import fitsio
 from functools import partial
 import scipy as sp
@@ -209,6 +210,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=
         print('INFO: # unique objs: ',dic['THING_ID'].size)
         print('INFO: # unique objs in spAll: ',sp.unique(thid).size)
         print('INFO: # spectra: ',w.sum())
+        if w.sum()==0:
+            print('INFO: no spectra, exit')
+            sys.exit()
 
         w = sp.argsort(thid)
         thid = thid[w]
