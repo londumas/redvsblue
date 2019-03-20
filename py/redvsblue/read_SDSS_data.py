@@ -48,9 +48,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=
         lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID' }
     else:
         lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'BESTID' }
+    lst['Z'] = zkey
     for k,v in lst.items():
         dic[k] = h[1][v][:]
-    dic['Z'] = h[1][zkey][:]
     if extinction:
         dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]/rvextinction
     h.close()
@@ -343,6 +343,7 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
             continue
 
         if lam.size==0:
+            path = path_spec+'/{}/spPlate-{}-{}.fits'.format(str(p).zfill(4),str(p).zfill(4),m)
             print('WARNING: No data in PLATE={}, MJD={}: {}'.format(p,m,path))
             continue
 
