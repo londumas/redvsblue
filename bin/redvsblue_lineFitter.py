@@ -78,6 +78,9 @@ if __name__ == '__main__':
     parser.add_argument('--lya-correction', action='store_true', required=False,
         help='Correct for Lyman-alpha absorption')
 
+    parser.add_argument('--no-slope', action='store_true', required=False,
+        help='Remove a slope from the model of the line')
+
     parser.add_argument('--mask-file',type=str,default=None,required=False,
         help='Path to file to mask regions in lambda_OBS and lambda_RF. In file each line is: region_name region_min region_max (OBS or RF) [Angstrom]')
 
@@ -131,7 +134,8 @@ if __name__ == '__main__':
         veto_lines=mask_file, flux_calib=flux_calib, ivar_calib=ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
         dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
-        cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model, correct_lya=args.lya_correction )
+        cutANDMASK=(not args.no_cut_ANDMASK), dwave_model=args.dwave_model, correct_lya=args.lya_correction,
+        no_slope=args.no_slope )
 
 
     ### Send
@@ -200,6 +204,7 @@ if __name__ == '__main__':
             {'name':'NPOLY','value':args.deg_legendre,'comment':'Number of Legendre Polynoms'},
             {'name':'GALEXT','value':(not args.no_extinction_correction),'comment':'Correct for Galactic extinction'},
             {'name':'LYAABS','value':args.lya_correction,'comment':'Correct for Lya absorption'},
+            {'name':'NOSLOPE','value':args.no_slope,'comment':'Remove slope form line model'},
             {'name':'WMASK','value':args.mask_file.split('/')[-1],'comment':'Path to observed wavelength mask'},
             {'name':'FCALIB','value':args.flux_calib.split('/')[-1],'comment':'Path to flux calibration'},
             {'name':'ICALIB','value':args.ivar_calib.split('/')[-1],'comment':'Path to ivar calibration'},
