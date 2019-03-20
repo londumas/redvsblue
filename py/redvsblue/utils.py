@@ -57,7 +57,7 @@ def read_PCA(path,dim=False,smooth=None):
         dim = fl.shape[0]
 
     copyfl = fl.copy()
-    if not smooth is None:
+    if smooth!=0:
         for i in range(copyfl.shape[0]):
             copyfl[i,:] = sp.ndimage.filters.gaussian_filter(copyfl[i,:],sigma=smooth)
 
