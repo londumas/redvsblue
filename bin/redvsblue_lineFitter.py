@@ -6,7 +6,7 @@ import copy
 from functools import partial
 from multiprocessing import Pool,Lock,cpu_count,Value
 
-from redvsblue import read_SDSS_data, constants, utils
+from redvsblue import read_SDSS_data, read_DESI_data, constants, utils
 from redvsblue.zwarning import ZWarningMask as ZW
 
 
@@ -93,6 +93,10 @@ if __name__ == '__main__':
     parser.add_argument('--stack-obs', action='store_true', required=False,
         help='Stack all valid observations')
 
+    parser.add_argument('--data-format',type=str,default='SDSS',required=False,
+        help='Data format: SDSS, DESI')
+    ###TODO: add nside, spectype
+
     parser.add_argument('--nspec', type=int, default=None, required=False,
         help='Maximum number of spectra to read')
 
@@ -102,6 +106,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.nproc is None:
         args.nproc = cpu_count()//2
+
+    read_format_data = globals()['read_{}_data'.format(args.data_format)]
 
     ###
     lines = constants.emissionLines
@@ -119,17 +125,20 @@ if __name__ == '__main__':
         mask_file = utils.read_mask_lines(mask_file)
 
     ### Read quasar catalog
-    catQSO = read_SDSS_data.read_cat(args.drq,
+    catQSO = read_format_data.read_cat(args.drq,
         zmin=args.z_min, zmax=args.z_max, zkey=args.z_key,
         extinction=(not args.no_extinction_correction),
         stack_obs=args.stack_obs,in_dir=args.in_dir, nspec=args.nspec)
 
     ### Read spectra
-    if args.stack_obs:
-        fit_line_name = 'fit_line_spec'
+    if args.data_format=='SDSS':
+        if args.stack_obs:
+            fit_line_name = 'fit_line_spec'
+        else:
+            fit_line_name = 'fit_line_spplate'
     else:
-        fit_line_name = 'fit_line_spplate'
-    p_fit_line = partial( getattr(read_SDSS_data,fit_line_name), path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
+        fit_line_name = 'fit_line'
+    p_fit_line = partial( getattr(read_format_data,fit_line_name), path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
         veto_lines=mask_file, flux_calib=flux_calib, ivar_calib=ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
@@ -150,7 +159,10 @@ if __name__ == '__main__':
             nbdistributed += cpu_data[i]['Z'].size
             if nbdistributed>=catQSO['Z'].size: break
     else:
-        pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
+        if args.data_format=='SDSS':
+            pm = catQSO['PLATE'].astype('int64')*100000 + catQSO['MJD'].astype('int64')
+        else:
+            pm = catQSO['HPXPIXEL']
         upm = sp.sort(sp.unique(pm))
         for tupm in upm:
             w = pm==tupm
@@ -158,9 +170,9 @@ if __name__ == '__main__':
             for k in catQSO.keys():
                 cpu_data[tupm][k] = cpu_data[tupm][k][w]
 
-    read_SDSS_data.ndata = catQSO['Z'].size
-    read_SDSS_data.counter = Value('i',0)
-    read_SDSS_data.lock = Lock()
+    read_format_data.ndata = catQSO['Z'].size
+    read_format_data.counter = Value('i',0)
+    read_format_data.lock = Lock()
     pool = Pool(processes=args.nproc)
     tdata = pool.map(p_fit_line,cpu_data.values())
     pool.close()
@@ -211,6 +223,7 @@ if __name__ == '__main__':
             {'name':'STACKOBS','value':args.stack_obs,'comment':'Stack all good observations'},
             ]
     dic = {}
+
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
     dic['THING_ID'] = sp.array([ data[t]['THING_ID'] for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
