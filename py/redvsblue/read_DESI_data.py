@@ -1,4 +1,5 @@
 from __future__ import print_function
+#import healpy
 import os
 import sys
 import fitsio
@@ -21,13 +22,19 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z',spectype='QSO',
 
     h = fitsio.FITS(pathData)
 
-    lst = {'TARGETID':'TARGETID', 'THING_ID':'TARGETID', 'Z':zkey, 'HPXPIXEL':'HPXPIXEL'}
+    lst = {'TARGETID':'TARGETID', 'THING_ID':'TARGETID', 'Z':zkey, 'RA':'RA', 'DEC':'DEC'}
     w = sp.char.strip(h[1]['SPECTYPE'][:].astype(str))==spectype
     for k,v in lst.items():
         dic[k] = h[1][v][:][w]
     if extinction:
         dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][w][:,1]/rvextinction
     h.close()
+
+    nest = True
+    in_nside = 16
+    ra = dic['RA']*sp.pi/180.
+    dec = dic['DEC']*sp.pi/180.
+    dic['HPXPIXEL'] = healpy.ang2pix(in_nside, sp.pi/2.-dec, ra,nest=nest)
 
     print('Found {} quasars'.format(dic['Z'].size))
 
