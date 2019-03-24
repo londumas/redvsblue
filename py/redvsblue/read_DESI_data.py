@@ -1,5 +1,5 @@
 from __future__ import print_function
-#import healpy
+import healpy
 import os
 import sys
 import fitsio
@@ -13,7 +13,7 @@ from redvsblue.fitline import fit_spec_redshift
 
 def read_cat(pathData,zmin=None,zmax=None,zkey='Z',spectype='QSO',
         extinction=True,stack_obs=False,in_dir=None,nspec=None,
-        rvextinction=3.793):
+        rvextinction=3.793,nside=64):
     """
 
     """
@@ -31,10 +31,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z',spectype='QSO',
     h.close()
 
     nest = True
-    in_nside = 16
     ra = dic['RA']*sp.pi/180.
     dec = dic['DEC']*sp.pi/180.
-    dic['HPXPIXEL'] = healpy.ang2pix(in_nside, sp.pi/2.-dec, ra,nest=nest)
+    dic['HPXPIXEL'] = healpy.ang2pix(nside, sp.pi/2.-dec, ra,nest=nest)
 
     print('Found {} quasars'.format(dic['Z'].size))
 
@@ -72,7 +71,7 @@ def read_spec(hpxpixel,targetid=None,path_spec=None,
 
     """
 
-    path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(str(hpxpixel)[:2],str(hpxpixel),nside,str(hpxpixel))
+    path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(int(hpxpixel//100),hpxpixel,nside,hpxpixel)
 
     h = fitsio.FITS(path)
     tids = h['FIBERMAP']['TARGETID'][:]
@@ -119,10 +118,12 @@ def read_spec(hpxpixel,targetid=None,path_spec=None,
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
-    correct_lya=False,no_slope=False,nside=64):
+    correct_lya=False,no_slope=False):
     """
 
     """
+
+    nside = int(path_spec.split('spectra-')[-1].replace('/',''))
 
     ###
     p_read_spec = partial(read_spec, path_spec=path_spec, lambda_min=lambda_min, lambda_max=lambda_max,
@@ -142,12 +143,12 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
         try:
             lam, fliv = p_read_spec(thppixel)
         except OSError:
-            path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(str(thppixel)[:2],str(thppixel),nside,str(thppixel))
+            path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(int(thppixel//100),thppixel,nside,thppixel)
             print('WARNING: Can not find pixel {}: {}'.format(thppixel,path))
             continue
 
         if lam.size==0:
-            path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(str(thppixel)[:2],str(thppixel),nside,str(thppixel))
+            path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(int(thppixel//100),thppixel,nside,thppixel)
             print('WARNING: No data in pixel {}: {}'.format(thppixel,path))
             continue
 

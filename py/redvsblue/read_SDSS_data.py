@@ -35,7 +35,8 @@ def fit_spec(z, lam, flux, weight, wflux, qso_pca=None):
 
 
 
-def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',extinction=True,stack_obs=False,in_dir=None,nspec=None,rvextinction=3.793):
+def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
+    extinction=True,stack_obs=False,in_dir=None,nspec=None,rvextinction=3.793,nside=None):
     """
 
     """
