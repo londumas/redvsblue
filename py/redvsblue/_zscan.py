@@ -3,6 +3,7 @@ import warnings
 warnings.filterwarnings('error')
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 def _zchi2_one(Tb, weights, flux, wflux, zcoeff):
     """

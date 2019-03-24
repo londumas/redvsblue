@@ -124,11 +124,16 @@ if __name__ == '__main__':
     if not mask_file is None:
         mask_file = utils.read_mask_lines(mask_file)
 
+    if args.data_format=='DESI':
+        nside = int(args.in_dir.split('spectra-')[-1].replace('/',''))
+    else:
+        nside = None
+
     ### Read quasar catalog
     catQSO = read_format_data.read_cat(args.drq,
         zmin=args.z_min, zmax=args.z_max, zkey=args.z_key,
         extinction=(not args.no_extinction_correction),
-        stack_obs=args.stack_obs,in_dir=args.in_dir, nspec=args.nspec)
+        stack_obs=args.stack_obs,in_dir=args.in_dir, nspec=args.nspec, nside=nside)
 
     ### Read spectra
     if args.data_format=='SDSS':
