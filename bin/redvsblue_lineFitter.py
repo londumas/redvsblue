@@ -203,6 +203,7 @@ if __name__ == '__main__':
         args.ivar_calib = ''
 
     head = [ {'name':'DRQ','value':args.drq.split('/')[-1],'comment':'Object catalog with redshift prior'},
+            {'name':'INDIR','value':args.in_dir.split('/')[-1],'comment':'Spectra files folder'},
             {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'},
             {'name':'ZMIN','value':args.z_min,'comment':'Minimum redshift'},
             {'name':'ZMAX','value':args.z_max,'comment':'Maximum redshift'},
