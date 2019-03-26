@@ -97,7 +97,6 @@ def read_mask_lines(path):
             l = l.split()
             if l[3]=='OBS':
                 usr_mask_obs += [ [float(l[1]),float(l[2])] ]
-        f.closed
     usr_mask_obs = sp.asarray(usr_mask_obs)
 
     return usr_mask_obs
