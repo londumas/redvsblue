@@ -1,12 +1,10 @@
 from __future__ import print_function
 import healpy
-import os
 import sys
 import fitsio
 from functools import partial
 import scipy as sp
 import scipy.special
-import glob
 
 from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
 from redvsblue.fitline import fit_spec_redshift
