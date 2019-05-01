@@ -6,6 +6,7 @@ import copy
 from functools import partial
 from multiprocessing import Pool,Lock,cpu_count,Value
 
+import redvsblue
 from redvsblue import read_SDSS_data, read_DESI_data, constants, utils
 from redvsblue.zwarning import ZWarningMask as ZW
 
@@ -227,6 +228,7 @@ if __name__ == '__main__':
             {'name':'FCALIB','value':args.flux_calib.split('/')[-1],'comment':'Path to flux calibration'},
             {'name':'ICALIB','value':args.ivar_calib.split('/')[-1],'comment':'Path to ivar calibration'},
             {'name':'STACKOBS','value':args.stack_obs,'comment':'Stack all good observations'},
+            {'name':'VERSION','value':redvsblue.__version__,'comment':'redvsblue version'},
             ]
     dic = {}
 

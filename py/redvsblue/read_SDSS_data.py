@@ -46,10 +46,9 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
     h = fitsio.FITS(pathData)
 
     if 'MJD' in h[1].get_colnames():
-        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID' }
+        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID', 'Z':zkey }
     else:
-        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'BESTID' }
-    lst['Z'] = zkey
+        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'BESTID', 'Z':zkey }
     for k,v in lst.items():
         dic[k] = h[1][v][:]
     if extinction:
