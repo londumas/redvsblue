@@ -101,11 +101,12 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
         plate_spall = h[1]['PLATE'][:]
         mjd_spall = h[1]['MJD'][:]
         fid_spall = h[1]['FIBERID'][:]
-        qual_spall = h[1]['PLATEQUALITY'][:]
+        qual_spall = sp.char.strip(h[1]['PLATEQUALITY'][:].astype(str))
         zwarn_spall = h[1]['ZWARNING'][:]
         h.close()
 
-        w = sp.in1d(thid_spall, dic['THING_ID']) & (qual_spall == b'good')
+        w = sp.in1d(thid_spall, dic['THING_ID'])
+        w &= qual_spall=='good'
         ## Removing spectra with the following ZWARNING bits set:
         ## SKY, LITTLE_COVERAGE, UNPLUGGED, BAD_TARGET, NODATA
         ## https://www.sdss.org/dr14/algorithms/bitmasks/#ZWARNING
