@@ -93,7 +93,10 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
             dic[k] = dic[k][w]
 
         spall = glob.glob(os.path.expandvars(in_dir+'/spAll-*.fits'))
-        assert len(spall)==1
+        if len(spall)!=1:
+            print('WARNING: found {} spAll'.format(len(spall)))
+            dic['ALLOBS'] = [ [t] for t in dic['TARGETID'] ]
+            return dic
 
         h = fitsio.FITS(spall[0])
         print('INFO: reading spAll from {}'.format(spall[0]))
