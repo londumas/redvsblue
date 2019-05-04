@@ -27,7 +27,7 @@ class TestCor(unittest.TestCase):
 
     def test_cor(self):
 
-        self._test = False
+        self._test = True
         self.send_requirements()
         self._branchFiles = '/uufs/astro.utah.edu/common/home/u6011908/Programs/londumas/redvsblue/py/redvsblue/test/data_test/'
         self._masterFiles = resource_filename('redvsblue', 'test/data/')
