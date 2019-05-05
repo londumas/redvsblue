@@ -463,7 +463,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
                 iv = sp.append(iv,tiv)
 
         if (ll is None) or (ll.size==0):
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (1) for THING_ID = {}'.format(thids))
             continue
 
         dll = 1e-4
@@ -479,7 +479,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = iv[w]
 
         if ll.size==0:
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
             continue
 
         cll = lmin + sp.arange(bins.max()+1)*dll
@@ -495,7 +495,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = civ[w]
 
         if lam.size==0:
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (3) for THING_ID = {}'.format(thids))
             continue
 
         wfl = fl*iv
