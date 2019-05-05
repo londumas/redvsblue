@@ -92,24 +92,12 @@ class TestCor(unittest.TestCase):
         self.assertEqual(len(m),len(b),"{}".format(nameRun))
 
         for i,_ in enumerate(m):
+            if i==0:
+                continue
 
             ###
-            r_m = m[i].read_header().records()
-            ld_m = []
-            for el in r_m:
-                name = el['name']
-                if len(name)>5 and name[:5]=="TTYPE":
-                    ld_m += [el['value'].replace(" ","")]
-            ###
-            r_b = b[i].read_header().records()
-            ld_b = []
-            for el in r_b:
-                name = el['name']
-                if len(name)>5 and name[:5]=="TTYPE":
-                    ld_b += [el['value'].replace(" ","")]
-
-            print(ld_m)
-            print(ld_b)
+            ld_m = sorted(m[i].get_colnames())
+            ld_b = sorted(b[i].get_colnames())
             self.assertListEqual(ld_m,ld_b,"{}".format(nameRun))
 
             for k in ld_m:
