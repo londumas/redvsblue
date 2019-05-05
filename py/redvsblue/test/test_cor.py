@@ -109,7 +109,7 @@ class TestCor(unittest.TestCase):
                     d_b = sp.char.strip(d_b)
                 self.assertEqual(d_m.size,d_b.size,"{}: Header key is {}".format(nameRun,k))
                 if not sp.array_equal(d_m,d_b):
-                    print("WARNING: {}: Header key is {}, arrays are not exactly equal, using allclose".format(nameRun,k))
+                    print("WARNING: {}: {}, Header key is {}, arrays are not exactly equal, using allclose".format(nameRun,i,k))
                     print(d_m, d_b)
                     diff = d_m-d_b
                     w = d_m!=0.
