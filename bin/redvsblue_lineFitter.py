@@ -179,12 +179,11 @@ if __name__ == '__main__':
     read_format_data.ndata = catQSO['Z'].size
     read_format_data.counter = Value('i',0)
     read_format_data.lock = Lock()
-    #pool = Pool(processes=args.nproc)
-    tdata = map(p_fit_line,cpu_data.values())
-    #pool.close()
+    pool = Pool(processes=args.nproc)
+    tdata = pool.map(p_fit_line,cpu_data.values())
+    pool.close()
 
     ### Put in one data set
-    tdata = list(tdata)
     data = tdata[0]
     for td in tdata[1:]:
         for t in td.keys():
