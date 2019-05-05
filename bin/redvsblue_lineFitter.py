@@ -284,7 +284,8 @@ if __name__ == '__main__':
             dic['ZLINE'][w] = dic['ZLINE'][w]/lv-1.
         else:
             dic['ZLINE'] = -sp.ones(dic['ZLINE'].size)
-
+        print('\n')
+        print(ln)
         print(dic)
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 
