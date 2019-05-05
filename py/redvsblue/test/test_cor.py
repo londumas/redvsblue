@@ -108,6 +108,8 @@ class TestCor(unittest.TestCase):
                 if len(name)>5 and name[:5]=="TTYPE":
                     ld_b += [el['value'].replace(" ","")]
 
+            print(ld_m)
+            print(ld_b)
             self.assertListEqual(ld_m,ld_b,"{}".format(nameRun))
 
             for k in ld_m:
