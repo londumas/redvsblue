@@ -232,7 +232,6 @@ if __name__ == '__main__':
             {'name':'VERSION','value':redvsblue.__version__,'comment':'redvsblue version'},
             ]
     dic = {}
-
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
     dic['THING_ID'] = sp.array([ data[t]['THING_ID'] for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
@@ -241,6 +240,7 @@ if __name__ == '__main__':
     for k in dic.keys():
         dic[k] = dic[k][tw]
 
+    print(dic)
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
     for ln, lv in lines.items():
@@ -285,6 +285,7 @@ if __name__ == '__main__':
         else:
             dic['ZLINE'] = -sp.ones(dic['ZLINE'].size)
 
+        print(dic)
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 
     out.close()
