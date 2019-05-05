@@ -243,7 +243,14 @@ if __name__ == '__main__':
     print(dic)
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
-    for ln, lv in lines.items():
+    w = sp.argsort(list(lines.values()))
+    lst_lines = sp.array(list(lines.keys()))[w][::-1]
+    print(lst_lines)
+    if lst_lines[-1]=='PCA':
+        lst_lines = sp.append(['PCA'],lst_lines[:-1])
+    print(lst_lines)
+    for ln in lst_lines:
+        lv = lines[ln]
         dic = {}
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
