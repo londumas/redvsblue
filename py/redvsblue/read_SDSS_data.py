@@ -134,6 +134,12 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
 
         dic['ALLOBS'] = [ sp.sort(targetid[thid==t]) for t in dic['THING_ID'] ]
 
+        w = sp.array([ len(v) for v in dic['ALLOBS'] ])==0
+        if sp.any(w):
+            print('WARNING: Some objects have no valid observation')
+            for el in dic['THING_ID'][w]:
+                print('WARNING: {}'.format(el))
+
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None,
         lambda_min=None, lambda_max=None, cutANDMASK=True,
