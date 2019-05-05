@@ -167,6 +167,7 @@ class TestCor(unittest.TestCase):
         cmd += ' --z-key Z'
         cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
         cmd += ' --stack-obs'
+        cmd += ' --nproc 1'
         cmd += ' --no-extinction-correction'
         subprocess.call(cmd, shell=True)
 
