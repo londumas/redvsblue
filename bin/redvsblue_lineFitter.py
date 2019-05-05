@@ -240,15 +240,13 @@ if __name__ == '__main__':
     for k in dic.keys():
         dic[k] = dic[k][tw]
 
-    print(dic)
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
     w = sp.argsort(list(lines.values()))
     lst_lines = sp.array(list(lines.keys()))[w][::-1]
-    print(lst_lines)
     if lst_lines[-1]=='PCA':
         lst_lines = sp.append(['PCA'],lst_lines[:-1])
-    print(lst_lines)
+
     for ln in lst_lines:
         lv = lines[ln]
         dic = {}
@@ -291,9 +289,6 @@ if __name__ == '__main__':
             dic['ZLINE'][w] = dic['ZLINE'][w]/lv-1.
         else:
             dic['ZLINE'] = -sp.ones(dic['ZLINE'].size)
-        print('\n')
-        print(ln)
-        print(dic)
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 
     out.close()

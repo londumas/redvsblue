@@ -110,7 +110,6 @@ class TestCor(unittest.TestCase):
                 self.assertEqual(d_m.size,d_b.size,"{}: Header key is {}".format(nameRun,k))
                 if not sp.array_equal(d_m,d_b):
                     print("WARNING: {}: {}, Header key is {}, arrays are not exactly equal, using allclose".format(nameRun,i,k))
-                    print(d_m, d_b)
                     diff = d_m-d_b
                     w = d_m!=0.
                     diff[w] = sp.absolute( diff[w]/d_m[w] )
