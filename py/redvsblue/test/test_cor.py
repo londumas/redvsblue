@@ -53,22 +53,8 @@ class TestCor(unittest.TestCase):
                 os.mkdir(self._branchFiles+fold)
 
         ###
-        path_to_data = 'https://dr14.sdss.org/sas/dr14/eboss/spectro/redux/v5_10_0/spectra/lite/'
         dic = {'THING_ID':sp.array([113373895,242548124]),'PLATE':sp.array([4300,5138]),
             'MJD':sp.array([55528,55830]),'FIBERID':sp.array([224,20]),'Z':sp.array([1.24624,2.87229])}
-
-        for i in range(len(dic['PLATE'])):
-            p = dic['PLATE'][i]
-            m = dic['MJD'][i]
-            f = dic['FIBERID'][i]
-            path = '{}/{}/spec-{}-{}-{}.fits'.format(path_to_data,str(p).zfill(4),str(p).zfill(4),m,str(f).zfill(4))
-            path2 = self._branchFiles+'/data/spectra/lite/{}/'.format(str(p).zfill(4))
-            path3 = path2+'/spec-{}-{}-{}.fits'.format(str(p).zfill(4),m,str(f).zfill(4))
-            print(path)
-            if not os.path.isfile(path3):
-                wget.download(url=path,out=path2)
-
-        ### Save
         out = fitsio.FITS(self._branchFiles+'/Products/cat.fits','rw',clobber=True)
         out.write( [v for v in dic.values()] ,names=[k for k in dic.keys()],extname='CAT')
         out.close()
@@ -154,7 +140,7 @@ class TestCor(unittest.TestCase):
         ###
         print("\n")
         cmd = 'redvsblue_lineFitter.py --out '+self._branchFiles+'/Products/lineFitter.fits'
-        cmd += ' --in-dir '+self._branchFiles+'/data/'
+        cmd += ' --in-dir '+self._masterFiles+'/data/data/sdss/'
         cmd += ' --drq '+self._branchFiles+'/Products/cat.fits'
         cmd += ' --z-key Z'
         cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
@@ -162,7 +148,6 @@ class TestCor(unittest.TestCase):
         cmd += ' --nproc 1'
         cmd += ' --no-extinction-correction'
         subprocess.call(cmd, shell=True)
-
 
         ### Test
         if self._test:
@@ -184,7 +169,6 @@ class TestCor(unittest.TestCase):
         cmd += ' --no-extinction-correction'
         cmd += ' --data-format DESI'
         subprocess.call(cmd, shell=True)
-
 
         ### Test
         if self._test:
