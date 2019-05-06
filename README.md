@@ -53,7 +53,7 @@ The output is a FITS file, with one HDU per redshift type:
  - LYA, HDU=8: redshift of the LYA line
 
 For each best fit readshift, the code gives the following quantities:
- - ZLINE: best fit redshift of the line according to maximum of PCA (-1 for PCA)
+ - ZLINE: best fit redshift of the line according to maximum of PCA
  - ZPCA: best fit redshift according to PCA
  - ZERR: redshift error
  - ZWARN: redshift warning, use ZWARN=0 for reliable redshifts
