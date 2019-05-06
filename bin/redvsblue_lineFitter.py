@@ -231,7 +231,6 @@ if __name__ == '__main__':
             {'name':'VERSION','value':redvsblue.__version__,'comment':'redvsblue version'},
             ]
     dic = {}
-
     dic['TARGETID'] = sp.array([ t for t in data.keys() ])
     dic['THING_ID'] = sp.array([ data[t]['THING_ID'] for t in data.keys() ])
     dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
@@ -242,7 +241,13 @@ if __name__ == '__main__':
 
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
-    for ln, lv in lines.items():
+    w = sp.argsort(list(lines.values()))
+    lst_lines = sp.array(list(lines.keys()))[w][::-1]
+    if lst_lines[-1]=='PCA':
+        lst_lines = sp.append(['PCA'],lst_lines[:-1])
+
+    for ln in lst_lines:
+        lv = lines[ln]
         dic = {}
         head = [ {'name':'LINENAME','value':ln,'comment':'Line name'},
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
@@ -283,7 +288,6 @@ if __name__ == '__main__':
             dic['ZLINE'][w] = dic['ZLINE'][w]/lv-1.
         else:
             dic['ZLINE'] = -sp.ones(dic['ZLINE'].size)
-
         out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname=ln)
 
     out.close()

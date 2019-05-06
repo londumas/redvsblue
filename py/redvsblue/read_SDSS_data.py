@@ -93,7 +93,10 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
             dic[k] = dic[k][w]
 
         spall = glob.glob(os.path.expandvars(in_dir+'/spAll-*.fits'))
-        assert len(spall)==1
+        if len(spall)!=1:
+            print('WARNING: found {} spAll'.format(len(spall)))
+            dic['ALLOBS'] = [ [t] for t in dic['TARGETID'] ]
+            return dic
 
         h = fitsio.FITS(spall[0])
         print('INFO: reading spAll from {}'.format(spall[0]))
@@ -130,6 +133,12 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
         targetid = targetid[w]
 
         dic['ALLOBS'] = [ sp.sort(targetid[thid==t]) for t in dic['THING_ID'] ]
+
+        w = sp.array([ len(v) for v in dic['ALLOBS'] ])==0
+        if sp.any(w):
+            print('WARNING: Some objects have no valid observation')
+            for el in dic['THING_ID'][w]:
+                print('WARNING: {}'.format(el))
 
     return dic
 def read_spec_spplate(p,m,fiber=None,path_spec=None,
@@ -454,7 +463,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
                 iv = sp.append(iv,tiv)
 
         if (ll is None) or (ll.size==0):
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (1) for THING_ID = {}'.format(thids))
             continue
 
         dll = 1e-4
@@ -470,7 +479,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = iv[w]
 
         if ll.size==0:
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
             continue
 
         cll = lmin + sp.arange(bins.max()+1)*dll
@@ -486,7 +495,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = civ[w]
 
         if lam.size==0:
-            print('WARNING: No data for THING_ID = {}'.format(thids))
+            print('WARNING: No data (3) for THING_ID = {}'.format(thids))
             continue
 
         wfl = fl*iv

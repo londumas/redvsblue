@@ -18,7 +18,7 @@ setup(name="redvsblue",
     packages=['redvsblue'],
     package_dir = {'': 'py'},
     package_data = {'redvsblue': ['etc/']},
-    install_requires=['numpy','scipy','fitsio',
+    install_requires=['numpy','scipy','healpy','fitsio',
         'numba','future','setuptools'],
     test_suite='redvsblue.test.test_cor',
     scripts = scripts
