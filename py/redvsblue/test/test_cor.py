@@ -140,7 +140,7 @@ class TestCor(unittest.TestCase):
         ###
         print("\n")
         cmd = 'redvsblue_lineFitter.py --out '+self._branchFiles+'/Products/lineFitter.fits'
-        cmd += ' --in-dir '+self._masterFiles+'/data/data/sdss/'
+        cmd += ' --in-dir '+self._masterFiles+'/data/sdss/'
         cmd += ' --drq '+self._branchFiles+'/Products/cat.fits'
         cmd += ' --z-key Z'
         cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
