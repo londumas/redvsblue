@@ -31,7 +31,8 @@ class TestCor(unittest.TestCase):
         self.send_requirements()
         self._masterFiles = resource_filename('redvsblue', 'test/data/')
         self.produce_folder()
-        self.send_linefitter()
+        self.send_linefitter_SDSS()
+        self.send_linefitter_DESI()
 
         if self._test:
             self.remove_folder()
@@ -148,9 +149,10 @@ class TestCor(unittest.TestCase):
                 print("WARNING: Module {} can't be found".format(req_lib))
 
         return
-    def send_linefitter(self):
+    def send_linefitter_SDSS(self):
 
         ###
+        print("\n")
         cmd = 'redvsblue_lineFitter.py --out '+self._branchFiles+'/Products/lineFitter.fits'
         cmd += ' --in-dir '+self._branchFiles+'/data/'
         cmd += ' --drq '+self._branchFiles+'/Products/cat.fits'
@@ -166,7 +168,29 @@ class TestCor(unittest.TestCase):
         if self._test:
             path1 = self._masterFiles + '/Products/lineFitter.fits'
             path2 = self._branchFiles + '/Products/lineFitter.fits'
-            self.compare_fits(path1,path2,"redvsblue_lineFitter.py")
+            self.compare_fits(path1,path2,"redvsblue_lineFitter_SDSS.py")
+
+        return
+    def send_linefitter_DESI(self):
+
+        ###
+        print("\n")
+        cmd = 'redvsblue_lineFitter.py --out '+self._branchFiles+'/Products/lineFitter_DESI.fits'
+        cmd += ' --in-dir '+self._masterFiles+'/data/desi/spectra-16/'
+        cmd += ' --drq '+self._masterFiles+'/data/desi/zcat.fits'
+        cmd += ' --z-key Z'
+        cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
+        cmd += ' --nproc 1'
+        cmd += ' --no-extinction-correction'
+        cmd += ' --data-format DESI'
+        subprocess.call(cmd, shell=True)
+
+
+        ### Test
+        if self._test:
+            path1 = self._masterFiles + '/Products/lineFitter_DESI.fits'
+            path2 = self._branchFiles + '/Products/lineFitter_DESI.fits'
+            self.compare_fits(path1,path2,"redvsblue_lineFitter_DESI.py")
 
         return
 
