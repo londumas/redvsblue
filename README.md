@@ -30,6 +30,7 @@ redvsblue_lineFitter.py
 To run on DESI data, for example:
 
 ```
+redvsblue_lineFitter.py
 --out <path_to_write_output>.fits
 --in-dir /project/projectdirs/desi/datachallenge/redwood/spectro/redux/redwood/spectra-64/
 --drq /project/projectdirs/desi/datachallenge/redwood/spectro/redux/redwood/zcatalog-redwood-target-truth.fits
@@ -38,6 +39,18 @@ To run on DESI data, for example:
 --data-format DESI
 --no-extinction-correction
 ```
+
+## Output
+
+The output is a FITS file, with one HDU per redshift type:
+ - HDU=1: redshift prior
+ - HDU=2: PCA redshift
+ - HDU=3: redshift of the HALPHA line
+ - HDU=4: redshift of the HBETA line
+ - HDU=5: redshift of the MGII line
+ - HDU=6: redshift of the CIII line
+ - HDU=7: redshift of the CIV line
+ - HDU=8: redshift of the LYA line
 
 ## Why Red vs. Blue
 RED vs BLUE, from Corridor: <https://www.youtube.com/watch?v=arg_aHzviQw>
