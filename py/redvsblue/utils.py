@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 import fitsio
@@ -57,7 +59,7 @@ def read_PCA(path,dim=False,smooth=None):
         dim = fl.shape[0]
 
     copyfl = fl.copy()
-    if not smooth is None:
+    if smooth!=0:
         for i in range(copyfl.shape[0]):
             copyfl[i,:] = sp.ndimage.filters.gaussian_filter(copyfl[i,:],sigma=smooth)
 
@@ -97,7 +99,6 @@ def read_mask_lines(path):
             l = l.split()
             if l[3]=='OBS':
                 usr_mask_obs += [ [float(l[1]),float(l[2])] ]
-        f.closed
     usr_mask_obs = sp.asarray(usr_mask_obs)
 
     return usr_mask_obs
