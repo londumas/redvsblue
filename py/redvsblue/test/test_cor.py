@@ -3,15 +3,9 @@ import os
 import tempfile
 import shutil
 from pkg_resources import resource_filename
-import sys
 import subprocess
 import fitsio
 import scipy as sp
-if sys.version_info>(3,0):
-    # Python 3 code in this block
-    import configparser as ConfigParser
-else:
-    import ConfigParser
 
 class TestCor(unittest.TestCase):
 
