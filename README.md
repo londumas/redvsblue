@@ -59,7 +59,7 @@ For each best fit readshift, the code gives the following quantities:
     * ZWARN: redshift warning, use ZWARN=0 for reliable redshifts
     * CHI2: chi^2 of the best fit
     * DCHI2: Delta chi^2 against a Legendre polynomial, i.e. gives
-        the significance of the redshift
+    the significance of the redshift
     * NPIXBLUE: number of pixel on the blue side around the prior redshift
     * NPIXRED: number of pixel on the red side around the prior redshift
     * NPIX: total number of pixels around the prior redshift
