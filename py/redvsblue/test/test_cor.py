@@ -3,7 +3,6 @@ import os
 import tempfile
 import shutil
 from pkg_resources import resource_filename
-import sys
 import subprocess
 import fitsio
 import scipy as sp
