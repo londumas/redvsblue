@@ -4,7 +4,7 @@ Quasar and emission line precise redshift fitting from prior
 ## Install
 To install simply clone the repository, add to your PATH and
 to your PYTHONPATH
-```python
+```bash
 git clone https://github.com/londumas/redvsblue
 PYTHONPATH=$PYTHONPATH:<path_to_folder>/redvsblue/py/
 PATH=$PATH:<path_to_folder>/redvsblue/bin/
@@ -13,12 +13,12 @@ PATH=$PATH:<path_to_folder>/redvsblue/bin/
 ## Run
 
 To get all available options:
-```python
+```bash
 redvsblue_lineFitter.py --help
 ```
 
 To run on SDSS data, do:
-```python
+```bash
 redvsblue_lineFitter.py
 --out <path_to_write_output>.fits
 --in-dir $BOSS_SPECTRO_REDUX/v5_13_0/
@@ -29,7 +29,7 @@ redvsblue_lineFitter.py
 
 To run on DESI data, for example:
 
-```python
+```bash
 redvsblue_lineFitter.py
 --out <path_to_write_output>.fits
 --in-dir /project/projectdirs/desi/datachallenge/redwood/spectro/redux/redwood/spectra-64/
