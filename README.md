@@ -43,6 +43,7 @@ redvsblue_lineFitter.py
 ## Output
 
 The output is a FITS file, with one HDU per redshift type:
+
 *   CAT, HDU=1: redshift prior
 *   PCA, HDU=2: PCA redshift
 *   HALPHA, HDU=3: redshift of the HALPHA line
@@ -53,18 +54,30 @@ The output is a FITS file, with one HDU per redshift type:
 *   LYA, HDU=8: redshift of the LYA line
 
 For each best fit readshift, the code gives the following quantities:
+
 *   ZLINE: best fit redshift of the line according to maximum of PCA
+
 *   ZPCA: best fit redshift according to PCA
+
 *   ZERR: redshift error
+
 *   ZWARN: redshift warning, use ZWARN=0 for reliable redshifts
+
 *   CHI2: chi^2 of the best fit
+
 *   DCHI2: Delta chi^2 against a Legendre polynomial, i.e. gives
     the significance of the redshift
+
 *   NPIXBLUE: number of pixel on the blue side around the prior redshift
+
 *   NPIXRED: number of pixel on the red side around the prior redshift
+
 *   NPIX: total number of pixels around the prior redshift
+
 *   NPIXBLUEBEST: number of pixel on the blue side around the best redshift
+
 *   NPIXREDBEST: number of pixel on the red side around the best redshift
+
 *   NPIXBEST: total number of pixels around the best redshift
 
 ## Why Red vs. Blue
