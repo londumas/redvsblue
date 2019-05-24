@@ -3,15 +3,9 @@ import os
 import tempfile
 import shutil
 from pkg_resources import resource_filename
-import sys
 import subprocess
 import fitsio
 import scipy as sp
-if sys.version_info>(3,0):
-    # Python 3 code in this block
-    import configparser as ConfigParser
-else:
-    import ConfigParser
 
 class TestCor(unittest.TestCase):
 
@@ -27,8 +21,9 @@ class TestCor(unittest.TestCase):
     def test_cor(self):
 
         self._test = True
+        self.redvsblue_base = resource_filename('redvsblue', './').replace('py/redvsblue/./','')
         self.send_requirements()
-        self._masterFiles = resource_filename('redvsblue', 'test/data/')
+        self._masterFiles = self.redvsblue_base+'/py/redvsblue/test/data/'
         self.produce_folder()
         self.send_linefitter_SDSS()
         self.send_linefitter_DESI()
@@ -110,7 +105,7 @@ class TestCor(unittest.TestCase):
 
         req = {}
 
-        path = resource_filename('redvsblue', '/../../requirements.txt')
+        path = self.redvsblue_base+'/requirements.txt'
         with open(path,'r') as f:
             for l in f:
                 l = l.replace('\n','').replace('==',' ').replace('>=',' ').split()
@@ -142,7 +137,7 @@ class TestCor(unittest.TestCase):
         cmd += ' --in-dir '+self._masterFiles+'/data/sdss/'
         cmd += ' --drq '+self._branchFiles+'/Products/cat.fits'
         cmd += ' --z-key Z'
-        cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
+        cmd += ' --qso-pca '+self.redvsblue_base+'/etc/rrtemplate-qso.fits'
         cmd += ' --stack-obs'
         cmd += ' --nproc 1'
         cmd += ' --no-extinction-correction'
@@ -163,7 +158,7 @@ class TestCor(unittest.TestCase):
         cmd += ' --in-dir '+self._masterFiles+'/data/desi/spectra-16/'
         cmd += ' --drq '+self._masterFiles+'/data/desi/zcat.fits'
         cmd += ' --z-key Z'
-        cmd += ' --qso-pca '+resource_filename('redvsblue', '/../../etc/rrtemplate-qso.fits')
+        cmd += ' --qso-pca '+self.redvsblue_base+'/etc/rrtemplate-qso.fits'
         cmd += ' --nproc 1'
         cmd += ' --no-extinction-correction'
         cmd += ' --data-format DESI'
