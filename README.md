@@ -9,7 +9,7 @@ To do so the package, for each emission line or the full spectrum:
 -   runs a coarse chi2 scan as a function of redshift, using the input PCA+boradband Legendre polynomials
 -   finds three local minima
 -   does a finer chi2 scan in each minima
--   defines the global PCA redshift, ``ZPCA'' from the best minimum of the three
+-   defines the global PCA redshift, "ZPCA" from the best minimum of the three
 
 Chi2 scan vs. redshift     |  Best fit
 :-------------------------:|:-------------------------:
