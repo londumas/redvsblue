@@ -6,10 +6,21 @@ Quasar and emission line precise redshift fitting from prior
 This package aims at measuring a precise redshift
 given a broad redshift prior.
 To do so the package, for each emission line or the full spectrum:
--   runs a coarse chi2 scan as a function of redshift, using the input PCA+boradband Legendre polynomials
--   finds three local minima
--   does a finer chi2 scan in each minima
--   defines the global PCA redshift, "ZPCA" from the best minimum of the three
+
+*   Runs a coarse chi2 scan as a function of redshift, using
+    the input PCA+boradband Legendre polynomials
+
+*   Finds three local minima
+
+*   Does a finer chi2 scan in each minima
+
+*   Defines the global PCA redshift, "ZPCA" from the best minimum of the three.
+    ZPCA is a redshift estimator biased toward the computation of the PCA.
+
+*   The redshift of the line, "ZLINE", is defined from the maximum of the
+    best-fit model of the line.
+    ZLINE is a redshift estimator un-biased toward the velocity of the line,
+    but can be biased with respect to the cosmological redshift.
 
 Chi2 scan vs. redshift     |  Best fit
 :-------------------------:|:-------------------------:
