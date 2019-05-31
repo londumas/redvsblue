@@ -5,7 +5,9 @@ Quasar and emission line precise redshift fitting from prior
 
 Chi2 scan vs. redshift     |  Best fit
 :-------------------------:|:-------------------------:
-![example_chi2_PCA_thingid_113373895](tutorials/example_chi2_PCA_thingid_113373895.png)  |  ![example_fit_PCA_thingid_113373895](tutorials/example_fit_PCA_thingid_113373895.png)
+![chi2_PCA](tutorials/example_chi2_PCA_thingid_113373895.png)    |  ![fit_PCA](tutorials/example_fit_PCA_thingid_113373895.png)
+![chi2_MGII](tutorials/example_chi2_MGII_thingid_113373895.png)  |  ![fit_MGII](tutorials/example_fit_MGII_thingid_113373895.png)
+![chi2_CIII](tutorials/example_chi2_CIII_thingid_113373895.png)  |  ![fit_CIII](tutorials/example_fit_CIII_thingid_113373895.png)
 
 
 ## Install
