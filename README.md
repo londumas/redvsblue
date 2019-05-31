@@ -1,6 +1,13 @@
 # redvsblue
 Quasar and emission line precise redshift fitting from prior
 
+## Presentation
+
+Chi2 scan vs. redshift     |  Best fit
+:-------------------------:|:-------------------------:
+![example_chi2_PCA_thingid_113373895](tutorials/example_chi2_PCA_thingid_113373895.png)  |  ![example_fit_PCA_thingid_113373895](tutorials/example_fit_PCA_thingid_113373895.png)
+
+
 ## Install
 To install simply clone the repository, add to your PATH and
 to your PYTHONPATH
