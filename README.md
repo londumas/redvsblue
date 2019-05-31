@@ -1,6 +1,34 @@
 # redvsblue
 Quasar and emission line precise redshift fitting from prior
 
+## Presentation
+
+This package aims at measuring a precise redshift
+given a broad redshift prior.
+To do so the package, for each emission line or the full spectrum:
+
+*   Runs a coarse chi2 scan as a function of redshift, using
+    the input PCA+boradband Legendre polynomials
+
+*   Finds three local minima
+
+*   Does a finer chi2 scan in each minima
+
+*   Defines the global PCA redshift, "ZPCA" from the best minimum of the three.
+    ZPCA is a redshift estimator biased toward the computation of the PCA.
+
+*   The redshift of the line, "ZLINE", is defined from the maximum of the
+    best-fit model of the line.
+    ZLINE is a redshift estimator un-biased toward the velocity of the line,
+    but can be biased with respect to the cosmological redshift.
+
+| Chi2 scan vs. redshift                                          | Best fit                                                      |
+| :-------------------------:                                     | :-------------------------:                                   |
+| ![chi2_PCA](tutorials/example_chi2_PCA_thingid_113373895.png)   | ![fit_PCA](tutorials/example_fit_PCA_thingid_113373895.png)   |
+| ![chi2_MGII](tutorials/example_chi2_MGII_thingid_113373895.png) | ![fit_MGII](tutorials/example_fit_MGII_thingid_113373895.png) |
+| ![chi2_CIII](tutorials/example_chi2_CIII_thingid_113373895.png) | ![fit_CIII](tutorials/example_fit_CIII_thingid_113373895.png) |
+
+
 ## Install
 To install simply clone the repository, add to your PATH and
 to your PYTHONPATH
