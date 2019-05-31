@@ -14,14 +14,19 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
 
     """
 
+    import matplotlib.pyplot as plt
+
     ### Coarse scan
     zcoeff = sp.zeros(modelpca.shape[2])
     p_zchi2_one = partial(_zchi2_one, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
     chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
 
+    plt.title(line,fontsize=15)
+    plt.plot(zrange,chi2,label=r'$Coarse\,scan$',color='black')
+
     ### Loop over different minima
     results = {}
-    for idxmin in find_minima(chi2)[:nb_zmin]:
+    for iii,idxmin in enumerate(find_minima(chi2)[:nb_zmin]):
 
         zwarn = 0
 
@@ -43,6 +48,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             tmodelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
         tchi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
         tidxmin = 2+sp.argmin(tchi2[2:-2])
+        p = plt.plot(tzrange,tchi2,label=r'$Local\,minimum \#'+str(iii)+'$')
 
         if (tchi2==9e99).sum()>0:
             zwarn |= ZW.BAD_MINFIT
@@ -58,12 +64,25 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             zPCA, zerr, fval, tzwarn = tresult
             zwarn |= tzwarn
             results[idxmin] = (zPCA, zerr, zwarn, fval)
+        plt.plot([zPCA,zPCA],[tchi2.min(),chi2.max()],color=p[0].get_color())
 
     idx_min = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
     zPCA, zerr, zwarn, fval = results[idx_min]
+    plt.plot([zPCA,zPCA],[fval,chi2.max()],label=r'$ZPCA$')
+
+    plt.subplots_adjust(top=0.90,right=0.95,left=0.15)
+    plt.xlabel(r'$z$',fontsize=15)
+    plt.ylabel(r'$\chi^{2}$',fontsize=15)
+    plt.legend(fontsize=10)
+    plt.grid()
+    plt.show()
 
     ### Observed wavelength of maximum of line
-    if line!='PCA':
+    if True:#line!='PCA':
+
+        import matplotlib.pyplot as plt
+        plt.title(line,fontsize=15)
+        plt.plot(lam/10., flux, color='black', label=r'$\mathrm{Data}$')
 
         ### Get coefficient of the model
         model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
@@ -76,6 +95,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         tlegendre = sp.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(legendre.shape[1])]).T
         model = sp.append( sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T,tlegendre,axis=1)
         model = model.dot(zcoeff)
+        plt.plot(tlam/10., model, label=r'$\mathrm{Best-fit\,model}$')
 
         if no_slope:
             zcoeff = sp.zeros(2)
@@ -97,6 +117,13 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         else:
             zwarn |= tresult[3]
             lLine = tresult[0]
+
+        if line!='PCA':
+            from redvsblue.constants import emissionLines
+            tttt_line = (zPCA+1.)*emissionLines[line]
+            plt.plot([tttt_line/10.,tttt_line/10.],[flux.min(),flux.max()],label=r'$ZPCA$')
+            plt.plot([lLine/10.,lLine/10.],[flux.min(),flux.max()],label=r'$ZLINE$')
+
     else:
         lLine = -1.
 
@@ -104,5 +131,14 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     zcoeff = sp.zeros(legendre.shape[1])
     zchi2 = _zchi2_one(legendre, weight, flux, wflux, zcoeff)
     deltachi2 = zchi2
+    model = legendre.dot(zcoeff)
+    plt.plot(lam/10., model, label=r'$\mathrm{Best-fit\,broadband}$')
+
+    plt.subplots_adjust(top=0.90,right=0.95)
+    plt.xlabel(r'$\lambda_{\mathrm{Obs.}} \, [\mathrm{nm}]$',fontsize=15)
+    plt.ylabel(r'$flux$',fontsize=15)
+    plt.legend(fontsize=10)
+    plt.grid()
+    plt.show()
 
     return lLine, zPCA, zerr, zwarn, fval, deltachi2
