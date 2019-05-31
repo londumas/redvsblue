@@ -3,6 +3,14 @@ Quasar and emission line precise redshift fitting from prior
 
 ## Presentation
 
+This package aims at measuring a precise redshift
+given a broad redshift prior.
+To do so the package:
+-   runs a coarse chi2 scan as a function of redshift, using the input PCA+boradband Legendre polynomials
+-   finds 3 locol minima
+-   does a finer chi2 scan in each minima
+-   defines the global PCA redshift from the best minimum of the three
+
 Chi2 scan vs. redshift     |  Best fit
 :-------------------------:|:-------------------------:
 ![chi2_PCA](tutorials/example_chi2_PCA_thingid_113373895.png)    |  ![fit_PCA](tutorials/example_fit_PCA_thingid_113373895.png)
