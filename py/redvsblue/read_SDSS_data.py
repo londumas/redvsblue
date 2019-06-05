@@ -405,9 +405,9 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
                     valline['NPIXRED'] = ( w & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
                     w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
                 valline['NPIX'] = w.sum()
-                valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
 
                 if valline['NPIX']>1:
+                    valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
                     legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
                     tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
@@ -527,9 +527,9 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
                 valline['NPIXRED'] = ( w & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
                 w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
             valline['NPIX'] = w.sum()
-            valline['SNR'] = (fl[w]*sp.sqrt(iv[w])).mean()
 
             if valline['NPIX']>1:
+                valline['SNR'] = (fl[w]*sp.sqrt(iv[w])).mean()
                 legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
                 tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                 valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
