@@ -186,7 +186,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             data[t] = { 'ZPRIOR':z, 'THING_ID':thids[i] }
             for ln, lv in lines.items():
                 valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
-                'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
+                'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0,
+                'SNR':-9.e99}
 
                 w = tiv>0.
                 if not ln=='PCA':
@@ -194,6 +195,7 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
                     valline['NPIXRED'] = ( w & (lamRF>=lv) & (lamRF<lv+dwave_side) ).sum()
                     w &= (lamRF>lv-dwave_side) & (lamRF<lv+dwave_side)
                 valline['NPIX'] = w.sum()
+                valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
 
                 if valline['NPIX']>1:
                     legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T

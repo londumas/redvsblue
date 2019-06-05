@@ -253,7 +253,8 @@ if __name__ == '__main__':
                 {'name':'LINERF','value':lv,'comment':'Line rest frame [Angstrom]'}]
 
         for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2',
-            'NPIXBLUE','NPIXRED','NPIX','NPIXBLUEBEST','NPIXREDBEST','NPIXBEST']:
+            'NPIXBLUE','NPIXRED','NPIX','NPIXBLUEBEST','NPIXREDBEST','NPIXBEST',
+            'SNR']:
             dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
         for k in dic.keys():
             dic[k] = dic[k][tw]
