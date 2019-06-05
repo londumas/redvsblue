@@ -28,7 +28,6 @@ To do so the package, for each emission line or the full spectrum:
 | ![chi2_MGII](tutorials/example_chi2_MGII_thingid_113373895.png) | ![fit_MGII](tutorials/example_fit_MGII_thingid_113373895.png) |
 | ![chi2_CIII](tutorials/example_chi2_CIII_thingid_113373895.png) | ![fit_CIII](tutorials/example_fit_CIII_thingid_113373895.png) |
 
-
 ## Install
 To install simply clone the repository, add to your PATH and
 to your PYTHONPATH
@@ -107,6 +106,9 @@ For each best fit readshift, the code gives the following quantities:
 *   NPIXREDBEST: number of pixel on the red side around the best redshift
 
 *   NPIXBEST: total number of pixels around the best redshift
+
+*   SNR: mean signal-to-noise ratio per pixel in the spectral region used for
+    measuring the redshift
 
 ## Why Red vs. Blue
 RED vs BLUE, from Corridor: <https://www.youtube.com/watch?v=arg_aHzviQw>

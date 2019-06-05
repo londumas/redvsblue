@@ -396,7 +396,8 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
             data[t] = { 'ZPRIOR':z, 'THING_ID':thids[i] }
             for ln, lv in lines.items():
                 valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
-                'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
+                'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0,
+                'SNR':-9.e99}
 
                 w = tiv>0.
                 if not ln=='PCA':
@@ -406,6 +407,7 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
                 valline['NPIX'] = w.sum()
 
                 if valline['NPIX']>1:
+                    valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
                     legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
                     tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
@@ -516,7 +518,8 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         data[t] = { 'ZPRIOR':z, 'THING_ID':thids }
         for ln, lv in lines.items():
             valline = {'ZLINE':-1., 'ZPCA':-1., 'ZERR':-1., 'ZWARN': 0, 'CHI2':9e99, 'DCHI2':9e99,
-            'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0}
+            'NPIXBLUE':0, 'NPIXRED':0, 'NPIX':0, 'NPIXBLUEBEST':0, 'NPIXREDBEST':0, 'NPIXBEST':0,
+            'SNR':-9.e99}
 
             w = iv>0.
             if not ln=='PCA':
@@ -526,6 +529,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
             valline['NPIX'] = w.sum()
 
             if valline['NPIX']>1:
+                valline['SNR'] = (fl[w]*sp.sqrt(iv[w])).mean()
                 legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
                 tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                 valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
