@@ -108,5 +108,8 @@ For each best fit readshift, the code gives the following quantities:
 
 *   NPIXBEST: total number of pixels around the best redshift
 
+*   SNR: mean signal-to-noise ratio per pixel in the spectral region used for
+    measuring the redshift
+
 ## Why Red vs. Blue
 RED vs BLUE, from Corridor: <https://www.youtube.com/watch?v=arg_aHzviQw>
