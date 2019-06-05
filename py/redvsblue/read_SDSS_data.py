@@ -45,12 +45,21 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
 
     h = fitsio.FITS(pathData)
 
-    if 'MJD' in h[1].get_colnames():
-        lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID', 'Z':zkey }
+    if 'PLATE' in h[1].get_colnames():
+        if 'MJD' in h[1].get_colnames():
+            lst = {'PLATE':'PLATE','MJD':'MJD','FIBERID':'FIBERID', 'THING_ID':'THING_ID', 'Z':zkey }
+        else:
+            lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'BESTID', 'Z':zkey }
+        for k,v in lst.items():
+            dic[k] = h[1][v][:]
     else:
-        lst = {'PLATE':'PLATE','MJD':'SMJD','FIBERID':'FIBER', 'THING_ID':'BESTID', 'Z':zkey }
-    for k,v in lst.items():
-        dic[k] = h[1][v][:]
+        p, m, f = targetid2platemjdfiber(h[1]['TARGETID'][:])
+        dic['PLATE'] = p
+        dic['MJD'] = m
+        dic['FIBERID'] = f
+        dic['Z'] = h[1][zkey][:]
+        dic['THING_ID'] = -1*sp.ones(p.size,dtype=sp.int64)
+
     if extinction:
         dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]/rvextinction
     h.close()
