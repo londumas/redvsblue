@@ -4,7 +4,6 @@ import fitsio
 import empca
 from functools import partial
 import scipy as sp
-from scipy.interpolate import interp1d
 
 from desispec.interpolation import resample_flux
 from redvsblue import read_SDSS_data, utils

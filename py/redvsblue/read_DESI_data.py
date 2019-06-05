@@ -6,7 +6,7 @@ from functools import partial
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
+from redvsblue.utils import print, get_dz, unred, transmission_Lyman
 from redvsblue.fitline import fit_spec_redshift
 
 def read_cat(pathData,zmin=None,zmax=None,zkey='Z',spectype='QSO',
