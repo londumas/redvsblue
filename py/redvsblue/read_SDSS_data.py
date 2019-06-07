@@ -62,6 +62,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
 
     if extinction:
         dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]/rvextinction
+        assert (dic['G_EXTINCTION']<0.).sum()==0.
     h.close()
 
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
