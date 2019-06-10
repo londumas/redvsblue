@@ -89,6 +89,22 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
 
     if stack_obs:
 
+        spall = glob.glob(os.path.expandvars(in_dir+'/spAll-*.fits'))
+        if len(spall)!=1:
+            print('WARNING: found {} spAll'.format(len(spall)))
+            dic['ALLOBS'] = [ [t] for t in dic['TARGETID'] ]
+            return dic
+
+        h = fitsio.FITS(spall[0])
+        print('INFO: reading spAll from {}'.format(spall[0]))
+        thid_spall = h[1][lst['THING_ID']][:]
+        plate_spall = h[1]['PLATE'][:]
+        mjd_spall = h[1]['MJD'][:]
+        fid_spall = h[1]['FIBERID'][:]
+        qual_spall = sp.char.strip(h[1]['PLATEQUALITY'][:].astype(str))
+        zwarn_spall = h[1]['ZWARNING'][:]
+        h.close()
+
         w = dic['THING_ID']>0
         for k in dic.keys():
             dic[k] = dic[k][w]
@@ -102,29 +118,17 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
         for k in dic.keys():
             dic[k] = dic[k][w]
 
-        spall = glob.glob(os.path.expandvars(in_dir+'/spAll-*.fits'))
-        if len(spall)!=1:
-            print('WARNING: found {} spAll'.format(len(spall)))
-            dic['ALLOBS'] = [ [t] for t in dic['TARGETID'] ]
-            return dic
-
-        h = fitsio.FITS(spall[0])
-        print('INFO: reading spAll from {}'.format(spall[0]))
-        thid_spall = h[1]['THING_ID'][:]
-        plate_spall = h[1]['PLATE'][:]
-        mjd_spall = h[1]['MJD'][:]
-        fid_spall = h[1]['FIBERID'][:]
-        qual_spall = sp.char.strip(h[1]['PLATEQUALITY'][:].astype(str))
-        zwarn_spall = h[1]['ZWARNING'][:]
-        h.close()
-
         w = sp.in1d(thid_spall, dic['THING_ID'])
+        print("INFO: Found {} spectra with required THING_ID".format(w.sum()))
         w &= qual_spall=='good'
+        print("INFO: Found {} spectra with 'good' plate".format(w.sum()))
         ## Removing spectra with the following ZWARNING bits set:
         ## SKY, LITTLE_COVERAGE, UNPLUGGED, BAD_TARGET, NODATA
         ## https://www.sdss.org/dr14/algorithms/bitmasks/#ZWARNING
-        for zwarnbit in [0,1,7,8,9]:
+        bad_zwarnbit = {0:'SKY',1:'LITTLE_COVERAGE',7:'UNPLUGGED',8:'BAD_TARGET',9:'NODATA'}
+        for zwarnbit,zwarnbit_str in bad_zwarnbit.items():
             w &= (zwarn_spall&2**zwarnbit)==0
+            print("INFO: Found {} spectra without {} bit set: {}".format(w.sum(), zwarnbit, zwarnbit_str))
         thid = thid_spall[w]
         plate = plate_spall[w]
         mjd = mjd_spall[w]
@@ -464,7 +468,11 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = None
         for tobs in catQSO['ALLOBS'][i]:
             p, m, f = targetid2platemjdfiber(tobs)
-            tlam, tfl, tiv = p_read_spec_spec(p,m,f)
+            try:
+                tlam, tfl, tiv = p_read_spec_spec(p,m,f)
+            except OSError:
+                print('\nWARNING: Can not find PLATE={}, MJD={}, FIBERID={}'.format(p,m,f))
+                continue
             if ll is None:
                 ll = sp.log10(tlam)
                 fl = tfl
@@ -475,7 +483,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
                 iv = sp.append(iv,tiv)
 
         if (ll is None) or (ll.size==0):
-            print('WARNING: No data (1) for THING_ID = {}'.format(thids))
+            print('\nWARNING: No data (1) for THING_ID = {}'.format(thids))
             continue
 
         dll = 1e-4
@@ -491,7 +499,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = iv[w]
 
         if ll.size==0:
-            print('WARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
+            print('\nWARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
             continue
 
         cll = lmin + sp.arange(bins.max()+1)*dll
@@ -507,7 +515,7 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         iv = civ[w]
 
         if lam.size==0:
-            print('WARNING: No data (3) for THING_ID = {}'.format(thids))
+            print('\nWARNING: No data (3) for THING_ID = {}'.format(thids))
             continue
 
         wfl = fl*iv
