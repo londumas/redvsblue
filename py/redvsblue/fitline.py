@@ -2,7 +2,7 @@ from functools import partial
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import get_dz
+from redvsblue.utils import get_dz, transmission_Lyman
 from redvsblue.zwarning import ZWarningMask as ZW
 from redvsblue._zscan import _zchi2_one
 from redvsblue.fitz import minfit, maxLine, find_minima

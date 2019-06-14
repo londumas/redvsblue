@@ -61,23 +61,32 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
         dic['THING_ID'] = -1*sp.ones(p.size,dtype=sp.int64)
 
     if extinction:
-        dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]/rvextinction
-        assert (dic['G_EXTINCTION']<0.).sum()==0.
+        dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
+        w = dic['G_EXTINCTION']<=0.
+        if w.sum()!=0.:
+            print('WARNING: some G_EXTINCTION<=0.: {}, {}'.format(w.sum(), dic['G_EXTINCTION'][w]))
+        dic['G_EXTINCTION'][w] = 0.
+        dic['G_EXTINCTION'] /= rvextinction
     h.close()
 
     dic['TARGETID'] = platemjdfiber2targetid(dic['PLATE'].astype('int64'),dic['MJD'].astype('int64'),dic['FIBERID'].astype('int64'))
-    print('Found {} quasars'.format(dic['Z'].size))
 
     w = sp.argsort(dic['TARGETID'])
     for k in dic.keys():
         dic[k] = dic[k][w]
 
-    w = dic['Z']>-1.
+    w = sp.ones(dic['Z'].size, dtype=bool)
+    print('Found {} quasars'.format(w.sum()))
+    w &= dic['Z']!=-1.
+    print('z!=-1: {}'.format(w.sum()))
     w &= dic['Z']!=0.
+    print('z!=0: {}'.format(w.sum()))
     if not zmin is None:
         w &= dic['Z']>zmin
+        print('z>zmin: {}'.format(w.sum()))
     if not zmax is None:
         w &= dic['Z']<zmax
+        print('z<zmax: {}'.format(w.sum()))
     for k in dic.keys():
         dic[k] = dic[k][w]
 
