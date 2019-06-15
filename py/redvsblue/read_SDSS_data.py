@@ -422,6 +422,7 @@ def get_EW(catQSO, path_spec, lines, lambda_min=None, lambda_max=None,
     return data
 
 def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+    lambda_rest_min=None, lambda_rest_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
     correct_lya=False,no_slope=False):
@@ -474,8 +475,13 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
             t = targetids[i]
             f = fibs[i]
             z = zs[i]
+            lamRF = lam/(1.+z)
 
             w = iv[f-1]>0.
+            if not lambda_rest_min is None:
+                w &= lamRF>=lambda_rest_min
+            if not lambda_rest_max is None:
+                w &= lamRF<=lambda_rest_max
             tlam = lam[w]
             tfl = fl[f-1,w]
             tiv = iv[f-1,w]
@@ -525,6 +531,7 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
 
     return data
 def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+    lambda_rest_min=None, lambda_rest_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
     correct_lya=False,no_slope=False):
@@ -596,17 +603,23 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         cciv = sp.bincount(bins,weights=iv)
         cfl[:len(ccfl)] += ccfl
         civ[:len(cciv)] += cciv
+        lam = 10**cll
+        lamRF = lam/(1.+z)
         w = civ>0.
+        if not lambda_rest_min is None:
+            w &= lamRF>=lambda_rest_min
+        if not lambda_rest_max is None:
+           w &= lamRF<=lambda_rest_max
         lam = 10**(cll[w])
         fl = cfl[w]/civ[w]
         iv = civ[w]
+        wfl = fl*iv
+        lamRF = lam/(1.+z)
 
         if lam.size==0:
             print('\nWARNING: No data (3) for THING_ID = {}'.format(thids))
             continue
 
-        wfl = fl*iv
-        lamRF = lam/(1.+z)
         if extinction:
             tunred = unred(lam,extg)
             fl /= tunred

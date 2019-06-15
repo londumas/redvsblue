@@ -114,6 +114,7 @@ def read_spec(hpxpixel,targetid=None,path_spec=None,
     return lam, data
 
 def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambda_max=None,
+    lambda_rest_min=None, lambda_rest_max=None,
     veto_lines=None, flux_calib=None, ivar_calib=None, dwave_side=85., deg_legendre=3,
     dv_coarse=100., dv_fine=10., nb_zmin=3, extinction=True, cutANDMASK=True, dwave_model=0.1,
     correct_lya=False,no_slope=False):
@@ -165,6 +166,11 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             z = zs[i]
 
             w = fliv[t]['IVAR']>0.
+            lamRF = lam/(1.+z)
+            if not lambda_rest_min is None:
+                w &= lamRF>=lambda_rest_min
+            if not lambda_rest_max is None:
+               w &= lamRF<=lambda_rest_max
             tlam = lam[w]
             tfl = fliv[t]['FLUX'][w]
             tiv = fliv[t]['IVAR'][w]

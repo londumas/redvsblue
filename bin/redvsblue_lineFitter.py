@@ -43,6 +43,12 @@ if __name__ == '__main__':
     parser.add_argument('--lambda-max',type=float,default=10000.,required=False,
         help='Upper limit on observed wavelength [Angstrom]')
 
+    parser.add_argument('--lambda-rest-min',type=float,default=None,required=False,
+        help='Lower limit on rest-frame wavelength [Angstrom]')
+
+    parser.add_argument('--lambda-rest-max',type=float,default=None,required=False,
+        help='Upper limit on rest-frame wavelength [Angstrom]')
+
     parser.add_argument('--no-cut-ANDMASK', action='store_true', required=False,
         help='Do not cut pixels with AND_MASK!=0')
 
@@ -146,6 +152,7 @@ if __name__ == '__main__':
         fit_line_name = 'fit_line'
     p_fit_line = partial( getattr(read_format_data,fit_line_name), path_spec=args.in_dir, lines=lines, qso_pca=qso_pca,dv_prior=args.dv_prior,
         lambda_min=args.lambda_min, lambda_max=args.lambda_max,
+        lambda_rest_min=args.lambda_rest_min, lambda_rest_max=args.lambda_rest_max,
         veto_lines=mask_file, flux_calib=flux_calib, ivar_calib=ivar_calib,
         dwave_side=args.dwave_side, deg_legendre=args.deg_legendre, dv_coarse=args.dv_coarse,
         dv_fine=args.dv_fine, nb_zmin=args.nb_zmin,extinction=(not args.no_extinction_correction),
