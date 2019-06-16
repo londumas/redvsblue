@@ -165,6 +165,13 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             t = targetids[i]
             z = zs[i]
 
+            try:
+                w = fliv[t]['IVAR']>0.
+            except KeyError:
+                path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(int(thppixel//100),thppixel,nside,thppixel)
+                print('\nWARNING: Can not find TARGETID={} in file {}'.format(t,path))
+                continue
+
             w = fliv[t]['IVAR']>0.
             lamRF = lam/(1.+z)
             if not lambda_rest_min is None:
