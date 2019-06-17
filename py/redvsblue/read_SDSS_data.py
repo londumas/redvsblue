@@ -79,8 +79,6 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
     print('Found {} quasars'.format(w.sum()))
     w &= dic['Z']!=-1.
     print('z!=-1: {}'.format(w.sum()))
-    w &= dic['Z']!=0.
-    print('z!=0: {}'.format(w.sum()))
     if not zmin is None:
         w &= dic['Z']>zmin
         print('z>zmin: {}'.format(w.sum()))
