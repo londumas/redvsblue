@@ -83,7 +83,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     if True:#line!='PCA':
 
         import matplotlib.pyplot as plt
-        plt.title(line,fontsize=15)
+        plt.title(line+': zpca = {}'.format(round(zPCA,3)),fontsize=15)
         plt.plot(lam/10., flux, color='black', label=r'$\mathrm{Data}$')
 
         ### Get coefficient of the model
@@ -101,6 +101,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         model = sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T
         if correct_lya:
             T = transmission_Lyman(zPCA,tlam)
+            plt.plot(tlam/10., T, label=r'$\mathrm{Lya\,transmission}$')
             for iii in range(model.shape[-1]):
                 model[:,iii] *= T
         model = sp.append( model,tlegendre,axis=1)
@@ -131,8 +132,8 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         if line!='PCA':
             from redvsblue.constants import emissionLines
             tttt_line = (zPCA+1.)*emissionLines[line]
-            plt.plot([tttt_line/10.,tttt_line/10.],[flux.min(),flux.max()],label=r'$ZPCA$')
-            plt.plot([lLine/10.,lLine/10.],[flux.min(),flux.max()],label=r'$ZLINE$')
+            plt.plot([tttt_line/10.,tttt_line/10.],[flux.min(),flux.max()],label=r'$ZPCA: z = '+str(round(zPCA,3))+'$')
+            plt.plot([lLine/10.,lLine/10.],[flux.min(),flux.max()],label=r'$ZLINE: z = '+str(round(lLine/emissionLines[line]-1.,3))+'$')
 
     else:
         lLine = -1.

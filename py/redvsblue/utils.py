@@ -120,8 +120,11 @@ def transmission_Lyman(zObj,lObs):
     for l in Lyman_series.keys():
         w = lRF<Lyman_series[l]['line']
         zpix = lObs[w]/Lyman_series[l]['line']-1.
-        tauEff = Lyman_series[l]['A']*(1.+zpix)**Lyman_series[l]['B']
-        T[w] *= sp.exp(-tauEff)
+        if not Lyman_series[l]['A'] is None:
+            tauEff = Lyman_series[l]['A']*(1.+zpix)**Lyman_series[l]['B']
+            T[w] *= sp.exp(-tauEff)
+        else:
+            T[w] *= 0.
 
     return T
 def unred(wave, ebv, R_V=3.1, LMC2=False, AVGLMC=False):

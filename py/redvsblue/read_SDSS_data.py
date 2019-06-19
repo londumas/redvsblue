@@ -75,6 +75,10 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
     for k in dic.keys():
         dic[k] = dic[k][w]
 
+    w = sp.in1d(dic['PLATE'],[7338, 7339, 7340])
+    for k in dic.keys():
+        dic[k] = dic[k][w]
+
     w = sp.ones(dic['Z'].size, dtype=bool)
     print('Found {} quasars'.format(w.sum()))
     w &= dic['Z']!=-1.

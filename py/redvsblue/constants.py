@@ -7,7 +7,7 @@ Lyman_series = {
     'LY3'     : { 'line':972.537,  'A':0.0023/14.356,   'B':3.64, 'var_evol':3.8 },
     'LY4'     : { 'line':949.7431, 'A':0.0023/29.85984, 'B':3.64, 'var_evol':3.8 },
     'LY5'     : { 'line':937.8035, 'A':0.0023/53.36202, 'B':3.64, 'var_evol':3.8 },
-    #'LYLIMIT' : { 'line':911.8,    'A':0.0023,          'B':3.64, 'var_evol':3.8 },
+    'LYLIMIT' : { 'line':911.8,    'A':None,            'B':None, 'var_evol':None },
 }
 lines = {
     'MGII' : {'LINE':2796.3511, 'BLUE_MIN':2600., 'BLUE_MAX':2760., 'RED_MIN':2900. , 'RED_MAX':3120.},
