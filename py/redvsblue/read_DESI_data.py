@@ -165,6 +165,13 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             t = targetids[i]
             z = zs[i]
 
+            try:
+                w = fliv[t]['IVAR']>0.
+            except KeyError:
+                path = path_spec+'/{}/{}/spectra-{}-{}.fits'.format(int(thppixel//100),thppixel,nside,thppixel)
+                print('\nWARNING: Can not find TARGETID={} in file {}'.format(t,path))
+                continue
+
             w = fliv[t]['IVAR']>0.
             lamRF = lam/(1.+z)
             if not lambda_rest_min is None:
@@ -187,7 +194,9 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
             modelpca = sp.array([ sp.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
             if correct_lya:
-                modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                T = sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                for iii in range(modelpca.shape[-1]):
+                    modelpca[:,:,iii] *= T
 
             data[t] = { 'ZPRIOR':z, 'THING_ID':thids[i] }
             for ln, lv in lines.items():
