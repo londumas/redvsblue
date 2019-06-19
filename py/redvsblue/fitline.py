@@ -40,7 +40,9 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,1+int(round(4.*Dz/dz)))
         tmodelpca = sp.array([ sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in tzrange ])
         if correct_lya:
-            tmodelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
+            T = sp.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
+            for iii in range(tmodelpca.shape[-1]-legendre.shape[-1]):
+                tmodelpca[:,:,iii] *= T
         tchi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
         tidxmin = 2+sp.argmin(tchi2[2:-2])
 
@@ -66,15 +68,23 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     if line!='PCA':
 
         ### Get coefficient of the model
-        model = sp.append( sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T,legendre,axis=1)
+        model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
         if correct_lya:
-            model[:,0] *= transmission_Lyman(zPCA,lam)
+            T = transmission_Lyman(zPCA,lam)
+            for iii in range(model.shape[-1]):
+                model[:,iii] *= T
+        model = sp.append( model,legendre,axis=1)
         p_zchi2_one(model)
 
         ### Get finer model
         tlam = sp.arange(lam.min(), lam.max(), dwave_model)
         tlegendre = sp.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(legendre.shape[1])]).T
-        model = sp.append( sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T,tlegendre,axis=1)
+        model = sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T
+        if correct_lya:
+            T = transmission_Lyman(zPCA,tlam)
+            for iii in range(model.shape[-1]):
+                model[:,iii] *= T
+        model = sp.append( model,tlegendre,axis=1)
         model = model.dot(zcoeff)
 
         if no_slope:

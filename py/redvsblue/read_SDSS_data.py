@@ -418,7 +418,9 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
             modelpca = sp.array([ sp.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
             if correct_lya:
-                modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                T = sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                for iii in range(modelpca.shape[-1]):
+                    modelpca[:,:,iii] *= T
 
             data[t] = { 'ZPRIOR':z, 'THING_ID':thids[i] }
             for ln, lv in lines.items():
@@ -551,7 +553,9 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
         modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
         if correct_lya:
-            modelpca[:,:,0] *= sp.array([ transmission_Lyman(tz,lam) for tz in zrange ])
+            T = sp.array([ transmission_Lyman(tz,lam) for tz in zrange ])
+            for iii in range(modelpca.shape[-1]):
+                modelpca[:,:,iii] *= T
 
         data[t] = { 'ZPRIOR':z, 'THING_ID':thids }
         for ln, lv in lines.items():
