@@ -113,3 +113,6 @@ For each best fit readshift, the code gives the following quantities:
 
 ## Why Red vs. Blue
 RED vs BLUE, from Corridor: <https://www.youtube.com/watch?v=arg_aHzviQw>
+
+## Release follow the name of the queen of France
+<https://fr.wikipedia.org/wiki/Liste_des_reines_et_imp%C3%A9ratrices_de_France>
