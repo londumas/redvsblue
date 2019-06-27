@@ -64,7 +64,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
         dic['G_EXTINCTION'] = h[1]['EXTINCTION'][:][:,1]
         w = dic['G_EXTINCTION']<=0.
         if w.sum()!=0.:
-            print('WARNING: some G_EXTINCTION<=0.: {}, {}'.format(w.sum(), dic['G_EXTINCTION'][w]))
+            print('WARNING: some G_EXTINCTION<=0.: {}, {}'.format(w.sum(), sp.unique(dic['G_EXTINCTION'][w])))
         dic['G_EXTINCTION'][w] = 0.
         dic['G_EXTINCTION'] /= rvextinction
     h.close()
@@ -479,9 +479,9 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         if extinction:
             extg = catQSO['G_EXTINCTION'][i]
 
-        ll = None
-        fl = None
-        iv = None
+        ll = []
+        fl = []
+        iv = []
         for tobs in catQSO['ALLOBS'][i]:
             p, m, f = targetid2platemjdfiber(tobs)
             try:
@@ -489,54 +489,72 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
             except OSError:
                 print('\nWARNING: Can not find PLATE={}, MJD={}, FIBERID={}'.format(p,m,f))
                 continue
-            if ll is None:
-                ll = sp.log10(tlam)
-                fl = tfl
-                iv = tiv
-            else:
-                ll = sp.append(ll,sp.log10(tlam))
-                fl = sp.append(fl,tfl)
-                iv = sp.append(iv,tiv)
+            ll += [sp.log10(tlam)]
+            fl += [tfl]
+            iv += [tiv]
 
-        if (ll is None) or (ll.size==0):
+        if (len(ll)==0) or (sp.hstack(ll).size==0):
             print('\nWARNING: No data (1) for THING_ID = {}'.format(thids))
             continue
 
-        dll = 1e-4
-        lmin = ll.min()
-        bins = sp.floor((ll-lmin)/dll+0.5).astype(int)
-        ll = lmin + bins*dll
-        w = ll>=sp.log10(lambda_min)
-        w &= ll<sp.log10(lambda_max)
-        w &= iv>0.
-        bins = bins[w]
-        ll = ll[w]
-        fl = fl[w]
-        iv = iv[w]
+        if len(ll)>1:
 
-        if ll.size==0:
-            print('\nWARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
-            continue
+            ll = sp.hstack(ll)
+            fl = sp.hstack(fl)
+            iv = sp.hstack(iv)
 
-        cll = lmin + sp.arange(bins.max()+1)*dll
-        cfl = sp.zeros(bins.max()+1)
-        civ = sp.zeros(bins.max()+1)
-        ccfl = sp.bincount(bins,weights=iv*fl)
-        cciv = sp.bincount(bins,weights=iv)
-        cfl[:len(ccfl)] += ccfl
-        civ[:len(cciv)] += cciv
-        lam = 10**cll
-        lamRF = lam/(1.+z)
-        w = civ>0.
-        if not lambda_rest_min is None:
-            w &= lamRF>=lambda_rest_min
-        if not lambda_rest_max is None:
-           w &= lamRF<=lambda_rest_max
-        lam = 10**(cll[w])
-        fl = cfl[w]/civ[w]
-        iv = civ[w]
-        wfl = fl*iv
-        lamRF = lam/(1.+z)
+            dll = 1e-4
+            lmin = ll.min()
+            bins = sp.floor((ll-lmin)/dll+0.5).astype(int)
+            ll = lmin + bins*dll
+            w = ll>=sp.log10(lambda_min)
+            w &= ll<sp.log10(lambda_max)
+            w &= iv>0.
+            bins = bins[w]
+            ll = ll[w]
+            fl = fl[w]
+            iv = iv[w]
+
+            if ll.size==0:
+                print('\nWARNING: No data (2), good ivar = {} for THING_ID = {}'.format((iv>0.).sum(), thids))
+                continue
+
+            cll = lmin + sp.arange(bins.max()+1)*dll
+            cfl = sp.zeros(bins.max()+1)
+            civ = sp.zeros(bins.max()+1)
+            ccfl = sp.bincount(bins,weights=iv*fl)
+            cciv = sp.bincount(bins,weights=iv)
+            cfl[:len(ccfl)] += ccfl
+            civ[:len(cciv)] += cciv
+            lam = 10**cll
+            lamRF = lam/(1.+z)
+            w = civ>0.
+            if not lambda_rest_min is None:
+                w &= lamRF>=lambda_rest_min
+            if not lambda_rest_max is None:
+               w &= lamRF<=lambda_rest_max
+            lam = 10**(cll[w])
+            fl = cfl[w]/civ[w]
+            iv = civ[w]
+            wfl = fl*iv
+            lamRF = lam/(1.+z)
+        else:
+
+            lam = 10**ll[0]
+            fl = fl[0]
+            iv = iv[0]
+            lamRF = lam/(1.+z)
+
+            w = iv>0.
+            if not lambda_rest_min is None:
+                w &= lamRF>=lambda_rest_min
+            if not lambda_rest_max is None:
+               w &= lamRF<=lambda_rest_max
+            lam = lam[w]
+            fl = fl[w]
+            iv = iv[w]
+            wfl = fl*iv
+            lamRF = lam/(1.+z)
 
         if lam.size==0:
             print('\nWARNING: No data (3) for THING_ID = {}'.format(thids))
