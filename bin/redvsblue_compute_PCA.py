@@ -151,7 +151,12 @@ if __name__ == '__main__':
         if not args.no_extinction_correction:
             extg = catQSO['G_EXTINCTION'][w]
 
-        ll, fl, iv = p_read_spec_spplate(p,m)
+        try:
+            ll, fl, iv = p_read_spec_spplate(p,m)
+        except OSError:
+            print('WARNING: Can not find PLATE={}, MJD={}'.format(p,m))
+            continue
+
         for i,f in enumerate(fibs):
             w = iv[f-1]>0.
             if w.sum()<args.npix_min:
