@@ -205,11 +205,11 @@ if __name__ == '__main__':
 
     ### Get the mean
     tmeanspec = sp.zeros(pcaflux.shape[1],dtype='float32')
-    for i in range(10):
+    for i in range(1):
         step = sp.average(pcaflux,weights=pcaivar,axis=0)
-        print('INFO: Removing mean at step: ',i,step.min(), step.max())
+        #print('INFO: Removing mean at step: ',i,step.min(), step.max())
         tmeanspec += step
-        pcaflux -= step
+        #pcaflux -= step
 
     ### PCA
     print('INFO: Starting EMPCA')
