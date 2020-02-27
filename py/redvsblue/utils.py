@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import sys
 import fitsio
+import numpy as np
 import scipy as sp
 import scipy.ndimage
 import scipy.interpolate as interpolate
@@ -158,8 +159,8 @@ def unred(wave, ebv, R_V=3.1, LMC2=False, AVGLMC=False):
 
     # Compute UV portion of A(lambda)/E(B-V) curve using FM fitting function and
     # R-dependent coefficients
-    xcutuv = sp.array([10000.0/2700.0])
-    xspluv = 10000.0/sp.array([2700.0,2600.0])
+    xcutuv = np.array([10000.0/2700.0])
+    xspluv = 10000.0/np.array([2700.0,2600.0])
 
     iuv = sp.where(x >= xcutuv)[0]
     N_UV = iuv.size
@@ -181,9 +182,9 @@ def unred(wave, ebv, R_V=3.1, LMC2=False, AVGLMC=False):
 
     # Compute optical portion of A(lambda)/E(B-V) curve
     # using cubic spline anchored in UV, optical, and IR
-    xsplopir = sp.concatenate(([0],10000.0/sp.array([26500.0,12200.0,6000.0,5470.0,4670.0,4110.0])))
-    ysplir = sp.array([0.0,0.26469,0.82925])*R_V/3.1
-    ysplop = sp.array((sp.polyval([-4.22809e-01, 1.00270, 2.13572e-04][::-1],R_V ),
+    xsplopir = sp.concatenate(([0],10000.0/np.array([26500.0,12200.0,6000.0,5470.0,4670.0,4110.0])))
+    ysplir = np.array([0.0,0.26469,0.82925])*R_V/3.1
+    ysplop = np.array((sp.polyval([-4.22809e-01, 1.00270, 2.13572e-04][::-1],R_V ),
             sp.polyval([-5.13540e-02, 1.00216, -7.35778e-05][::-1],R_V ),
             sp.polyval([ 7.00127e-01, 1.00184, -3.32598e-05][::-1],R_V ),
             sp.polyval([ 1.19456, 1.01707, -5.46959e-03, 7.97809e-04, -4.45636e-05][::-1],R_V ) ))

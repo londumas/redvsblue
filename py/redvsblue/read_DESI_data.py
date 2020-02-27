@@ -3,6 +3,7 @@ import healpy
 import sys
 import fitsio
 from functools import partial
+import numpy as np
 import scipy as sp
 import scipy.special
 
@@ -192,9 +193,9 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
             Dz = get_dz(dv_prior,z)
             dz = get_dz(dv_coarse,z)
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
-            modelpca = sp.array([ sp.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+            modelpca = np.array([ np.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
             if correct_lya:
-                T = sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                T = np.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
                 for iii in range(modelpca.shape[-1]):
                     modelpca[:,:,iii] *= T
 
@@ -213,8 +214,8 @@ def fit_line(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, lambd
 
                 if valline['NPIX']>1:
                     valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
-                    legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
-                    tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
+                    legendre = np.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                    tmodelpca = np.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
                         tlam[w], tfl[w], tiv[w], twfl[w], tmodelpca, legendre, zrange, ln)
 
