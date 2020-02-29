@@ -5,6 +5,7 @@ import shutil
 from pkg_resources import resource_filename
 import subprocess
 import fitsio
+import numpy as np
 import scipy as sp
 
 class TestCor(unittest.TestCase):
@@ -47,8 +48,8 @@ class TestCor(unittest.TestCase):
                 os.mkdir(self._branchFiles+fold)
 
         ###
-        dic = {'THING_ID':sp.array([113373895,242548124]),'PLATE':sp.array([4300,5138]),
-            'MJD':sp.array([55528,55830]),'FIBERID':sp.array([224,20]),'Z':sp.array([1.24624,2.87229])}
+        dic = {'THING_ID':np.array([113373895,242548124]),'PLATE':np.array([4300,5138]),
+            'MJD':np.array([55528,55830]),'FIBERID':np.array([224,20]),'Z':np.array([1.24624,2.87229])}
         out = fitsio.FITS(self._branchFiles+'/Products/cat.fits','rw',clobber=True)
         out.write( [v for v in dic.values()] ,names=[k for k in dic.keys()],extname='CAT')
         out.close()
@@ -89,12 +90,12 @@ class TestCor(unittest.TestCase):
                 if d_b.dtype in ['<U23','S23']: ### for fitsio old version compatibility
                     d_b = sp.char.strip(d_b)
                 self.assertEqual(d_m.size,d_b.size,"{}: Header key is {}".format(nameRun,k))
-                if not sp.array_equal(d_m,d_b):
+                if not np.array_equal(d_m,d_b):
                     print("WARNING: {}: {}, Header key is {}, arrays are not exactly equal, using allclose".format(nameRun,i,k))
                     diff = d_m-d_b
                     w = d_m!=0.
-                    diff[w] = sp.absolute( diff[w]/d_m[w] )
-                    allclose = sp.allclose(d_m,d_b)
+                    diff[w] = np.absolute( diff[w]/d_m[w] )
+                    allclose = np.allclose(d_m,d_b)
                     self.assertTrue(allclose,"{}: Header key is {}, maximum relative difference is {}".format(nameRun,k,diff.max()))
 
         m.close()
