@@ -1,5 +1,6 @@
 import scipy as sp
-from redvsblue.zwarning import ZWarningMask as ZW
+
+from .zwarning import ZWarningMask as ZW
 
 def find_minima(x):
 

@@ -7,8 +7,8 @@ import numpy as np
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import print, get_dz, unred, transmission_Lyman
-from redvsblue.fitline import fit_spec_redshift
+from .utils import print, get_dz, unred, transmission_Lyman
+from .fitline import fit_spec_redshift
 
 def read_cat(pathData,zmin=None,zmax=None,zkey='Z',spectype='QSO',
         extinction=True,stack_obs=False,in_dir=None,nspec=None,
