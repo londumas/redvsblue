@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import fitsio
+import numpy as np
 import scipy as sp
 import copy
 from functools import partial
@@ -238,9 +239,9 @@ if __name__ == '__main__':
             {'name':'VERSION','value':redvsblue.__version__,'comment':'redvsblue version'},
             ]
     dic = {}
-    dic['TARGETID'] = sp.array([ t for t in data.keys() ])
-    dic['THING_ID'] = sp.array([ data[t]['THING_ID'] for t in data.keys() ])
-    dic['ZPRIOR'] = sp.array([ data[t]['ZPRIOR'] for t in data.keys() ])
+    dic['TARGETID'] = np.array([ t for t in data.keys() ])
+    dic['THING_ID'] = np.array([ data[t]['THING_ID'] for t in data.keys() ])
+    dic['ZPRIOR'] = np.array([ data[t]['ZPRIOR'] for t in data.keys() ])
 
     tw = sp.argsort(dic['TARGETID'])
     for k in dic.keys():
@@ -249,7 +250,7 @@ if __name__ == '__main__':
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
 
     w = sp.argsort(list(lines.values()))
-    lst_lines = sp.array(list(lines.keys()))[w][::-1]
+    lst_lines = np.array(list(lines.keys()))[w][::-1]
     if lst_lines[-1]=='PCA':
         lst_lines = sp.append(['PCA'],lst_lines[:-1])
 
@@ -262,7 +263,7 @@ if __name__ == '__main__':
         for k in ['ZLINE','ZPCA','ZERR','ZWARN','CHI2','DCHI2',
             'NPIXBLUE','NPIXRED','NPIX','NPIXBLUEBEST','NPIXREDBEST','NPIXBEST',
             'SNR']:
-            dic[k] = sp.array([ data[t][ln][k] for t in data.keys() ])
+            dic[k] = np.array([ data[t][ln][k] for t in data.keys() ])
         for k in dic.keys():
             dic[k] = dic[k][tw]
 

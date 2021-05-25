@@ -3,6 +3,7 @@ import argparse
 import fitsio
 import empca
 from functools import partial
+import numpy as np
 import scipy as sp
 
 from desispec.interpolation import resample_flux
@@ -186,7 +187,7 @@ if __name__ == '__main__':
     print('Keep {} quasars'.format(pcaflux.shape[0]))
 
     ### Reject too small median and normalize by median
-    med = sp.array([ sp.median(pcaflux[i][pcaivar[i]>0.]) for i in range(pcaflux.shape[0]) ])
+    med = np.array([ sp.median(pcaflux[i][pcaivar[i]>0.]) for i in range(pcaflux.shape[0]) ])
     w = med>args.median_min
     pcaflux = pcaflux[w]/med[w][:,None]
     pcaivar = pcaivar[w]*(med[w][:,None])**2

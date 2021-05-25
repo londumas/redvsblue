@@ -3,13 +3,14 @@ import os
 import sys
 import fitsio
 from functools import partial
+import numpy as np
 import scipy as sp
 import scipy.special
 import glob
 
-from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
-from redvsblue._zscan import _zchi2_one
-from redvsblue.fitline import fit_spec_redshift
+from .utils import print, get_dz, unred, transmission_Lyman, weighted_var
+from ._zscan import _zchi2_one
+from .fitline import fit_spec_redshift
 
 counter = None
 lock = None
@@ -27,7 +28,7 @@ def targetid2platemjdfiber(targetid):
 def fit_spec(z, lam, flux, weight, wflux, qso_pca=None):
 
     zcoeff = sp.zeros(len(qso_pca))
-    model = sp.array([ el(lam/(1.+z)) for el in qso_pca ]).T
+    model = np.array([ el(lam/(1.+z)) for el in qso_pca ]).T
     _zchi2_one(model, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
     model = model.dot(zcoeff)
 
@@ -155,7 +156,7 @@ def read_cat(pathData,zmin=None,zmax=None,zkey='Z_VI',
 
         dic['ALLOBS'] = [ sp.sort(targetid[thid==t]) for t in dic['THING_ID'] ]
 
-        w = sp.array([ len(v) for v in dic['ALLOBS'] ])==0
+        w = np.array([ len(v) for v in dic['ALLOBS'] ])==0
         if sp.any(w):
             print('WARNING: Some objects have no valid observation')
             for el in dic['THING_ID'][w]:
@@ -416,9 +417,9 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
             Dz = get_dz(dv_prior,z)
             dz = get_dz(dv_coarse,z)
             zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
-            modelpca = sp.array([ sp.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+            modelpca = np.array([ np.array([ el(tlam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
             if correct_lya:
-                T = sp.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
+                T = np.array([ transmission_Lyman(tz,tlam) for tz in zrange ])
                 for iii in range(modelpca.shape[-1]):
                     modelpca[:,:,iii] *= T
 
@@ -437,8 +438,8 @@ def fit_line_spplate(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=Non
 
                 if valline['NPIX']>1:
                     valline['SNR'] = (tfl[w]*sp.sqrt(tiv[w])).mean()
-                    legendre = sp.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
-                    tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
+                    legendre = np.array([scipy.special.legendre(i)( (tlam[w]-tlam[w].min())/(tlam[w].max()-tlam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                    tmodelpca = np.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                     valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
                         tlam[w], tfl[w], tiv[w], twfl[w], tmodelpca, legendre, zrange, ln)
 
@@ -569,9 +570,9 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
         Dz = get_dz(dv_prior,z)
         dz = get_dz(dv_coarse,z)
         zrange = sp.linspace(z-Dz,z+Dz,1+int(round(2.*Dz/dz)))
-        modelpca = sp.array([ sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
+        modelpca = np.array([ np.array([ el(lam/(1.+tz)) for el in qso_pca ]).T for tz in zrange ])
         if correct_lya:
-            T = sp.array([ transmission_Lyman(tz,lam) for tz in zrange ])
+            T = np.array([ transmission_Lyman(tz,lam) for tz in zrange ])
             for iii in range(modelpca.shape[-1]):
                 modelpca[:,:,iii] *= T
 
@@ -590,8 +591,8 @@ def fit_line_spec(catQSO, path_spec, lines, qso_pca, dv_prior, lambda_min=None, 
 
             if valline['NPIX']>1:
                 valline['SNR'] = (fl[w]*sp.sqrt(iv[w])).mean()
-                legendre = sp.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
-                tmodelpca = sp.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
+                legendre = np.array([scipy.special.legendre(i)( (lam[w]-lam[w].min())/(lam[w].max()-lam[w].min())*2.-1. ) for i in range(deg_legendre)]).T
+                tmodelpca = np.array([ sp.append(modelpca[i,w,:],legendre,axis=1) for i in range(modelpca.shape[0]) ])
                 valline['ZLINE'], valline['ZPCA'], valline['ZERR'], valline['ZWARN'], valline['CHI2'], valline['DCHI2'] = p_fit_spec(z,
                     lam[w], fl[w], iv[w], wfl[w], tmodelpca, legendre, zrange, ln)
 

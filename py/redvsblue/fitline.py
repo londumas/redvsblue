@@ -1,11 +1,12 @@
 from functools import partial
+import numpy as np
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import get_dz, transmission_Lyman
-from redvsblue.zwarning import ZWarningMask as ZW
-from redvsblue._zscan import _zchi2_one
-from redvsblue.fitz import minfit, maxLine, find_minima
+from .utils import get_dz, transmission_Lyman
+from .zwarning import ZWarningMask as ZW
+from ._zscan import _zchi2_one
+from .fitz import minfit, maxLine, find_minima
 
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
     qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=False,
@@ -19,7 +20,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
     ### Coarse scan
     zcoeff = sp.zeros(modelpca.shape[2])
     p_zchi2_one = partial(_zchi2_one, weights=weight, flux=flux, wflux=wflux, zcoeff=zcoeff)
-    chi2 = sp.array([ p_zchi2_one(el) for el in modelpca ])
+    chi2 = np.array([ p_zchi2_one(el) for el in modelpca ])
 
     plt.title(line,fontsize=15)
     plt.plot(zrange,chi2,label=r'$Coarse\,scan$',color='black')
@@ -43,12 +44,12 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         Dz = get_dz(dv_coarse,zPCA)
         dz = get_dz(dv_fine,zPCA)
         tzrange = sp.linspace(zPCA-2.*Dz,zPCA+2.*Dz,1+int(round(4.*Dz/dz)))
-        tmodelpca = sp.array([ sp.append( sp.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in tzrange ])
+        tmodelpca = np.array([ sp.append( np.array([ el(lam/(1.+tz)) for el in qso_pca ]).T,legendre,axis=1) for tz in tzrange ])
         if correct_lya:
-            T = sp.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
+            T = np.array([ transmission_Lyman(tz,lam) for tz in tzrange ])
             for iii in range(tmodelpca.shape[-1]-legendre.shape[-1]):
                 tmodelpca[:,:,iii] *= T
-        tchi2 = sp.array([ p_zchi2_one(el) for el in tmodelpca ])
+        tchi2 = np.array([ p_zchi2_one(el) for el in tmodelpca ])
         tidxmin = 2+sp.argmin(tchi2[2:-2])
         p = plt.plot(tzrange,tchi2,label=r'$Local\,minimum \#'+str(iii)+'$')
 
@@ -68,7 +69,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             results[idxmin] = (zPCA, zerr, zwarn, fval)
         plt.plot([zPCA,zPCA],[tchi2.min(),chi2.max()],color=p[0].get_color())
 
-    idx_min = sp.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
+    idx_min = np.array([ k for k in results.keys() ])[sp.argmin([ v[3] for v in results.values() ])]
     zPCA, zerr, zwarn, fval = results[idx_min]
     plt.plot([zPCA,zPCA],[fval,chi2.max()],label=r'$ZPCA$')
 
@@ -87,7 +88,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
         plt.plot(lam/10., flux, color='black', label=r'$\mathrm{Data}$')
 
         ### Get coefficient of the model
-        model = sp.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
+        model = np.array([ el(lam/(1.+zPCA)) for el in qso_pca ]).T
         if correct_lya:
             T = transmission_Lyman(zPCA,lam)
             for iii in range(model.shape[-1]):
@@ -97,8 +98,8 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
 
         ### Get finer model
         tlam = sp.arange(lam.min(), lam.max(), dwave_model)
-        tlegendre = sp.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(legendre.shape[1])]).T
-        model = sp.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T
+        tlegendre = np.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(legendre.shape[1])]).T
+        model = np.array([ el(tlam/(1.+zPCA)) for el in qso_pca ]).T
         if correct_lya:
             T = transmission_Lyman(zPCA,tlam)
             plt.plot(tlam/10., T, label=r'$\mathrm{Lya\,transmission}$')
@@ -112,7 +113,7 @@ def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, l
             zcoeff = sp.zeros(2)
             slope = legendre[:,:2]
             zchi2 = _zchi2_one(slope, weight, flux, wflux, zcoeff)
-            slope = sp.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(2)]).T
+            slope = np.array([scipy.special.legendre(i)( (tlam-tlam.min())/(tlam.max()-tlam.min())*2.-1. ) for i in range(2)]).T
             slope = slope.dot(zcoeff)
             model -= slope
 

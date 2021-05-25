@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import fitsio
+import numpy as np
 import scipy as sp
 import copy
 from functools import partial
@@ -132,11 +133,11 @@ if __name__ == '__main__':
     out = fitsio.FITS(args.out,'rw',clobber=True)
     head = [ {'name':'ZKEY','value':args.z_key,'comment':'Fitsio key for redshift'} ]
     dic = {}
-    dic['TARGETID'] = sp.array([ t for t in data.keys() ])
-    dic['Z'] = sp.array([ data[t]['Z'] for t in data.keys() ])
+    dic['TARGETID'] = np.array([ t for t in data.keys() ])
+    dic['Z'] = np.array([ data[t]['Z'] for t in data.keys() ])
     for ln in lines.keys():
         for side in ['BLUE','RED']:
             for k in ['NB','VAR','SNR']:
-                dic[ln+'_'+side+'_'+k] = sp.array([ data[t][ln][side+'_'+k] for t in data.keys() ])
+                dic[ln+'_'+side+'_'+k] = np.array([ data[t][ln][side+'_'+k] for t in data.keys() ])
     out.write([v for v in dic.values()],names=[k for k in dic.keys()],header=head,extname='CAT')
     out.close()
