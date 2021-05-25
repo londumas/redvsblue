@@ -3,10 +3,10 @@ import numpy as np
 import scipy as sp
 import scipy.special
 
-from redvsblue.utils import get_dz, transmission_Lyman
-from redvsblue.zwarning import ZWarningMask as ZW
-from redvsblue._zscan import _zchi2_one
-from redvsblue.fitz import minfit, maxLine, find_minima
+from .utils import get_dz, transmission_Lyman
+from .zwarning import ZWarningMask as ZW
+from ._zscan import _zchi2_one
+from .fitz import minfit, maxLine, find_minima
 
 def fit_spec_redshift(z, lam, flux, weight, wflux, modelpca, legendre, zrange, line,
     qso_pca=None, dv_coarse=None, dv_fine=None, nb_zmin=3, dwave_model=0.1, correct_lya=False,

@@ -9,7 +9,7 @@ import scipy.ndimage
 import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 
-from redvsblue.constants import Lyman_series
+from .constants import Lyman_series
 
 try:
     import __builtin__

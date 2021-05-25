@@ -8,9 +8,9 @@ import scipy as sp
 import scipy.special
 import glob
 
-from redvsblue.utils import print, get_dz, unred, transmission_Lyman, weighted_var
-from redvsblue._zscan import _zchi2_one
-from redvsblue.fitline import fit_spec_redshift
+from .utils import print, get_dz, unred, transmission_Lyman, weighted_var
+from ._zscan import _zchi2_one
+from .fitline import fit_spec_redshift
 
 counter = None
 lock = None
