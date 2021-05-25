@@ -3,6 +3,7 @@ import argparse
 import fitsio
 import empca
 from functools import partial
+import numpy as np
 import scipy as sp
 
 from desispec.interpolation import resample_flux
@@ -151,7 +152,12 @@ if __name__ == '__main__':
         if not args.no_extinction_correction:
             extg = catQSO['G_EXTINCTION'][w]
 
-        ll, fl, iv = p_read_spec_spplate(p,m)
+        try:
+            ll, fl, iv = p_read_spec_spplate(p,m)
+        except OSError:
+            print('WARNING: Can not find PLATE={}, MJD={}'.format(p,m))
+            continue
+
         for i,f in enumerate(fibs):
             w = iv[f-1]>0.
             if w.sum()<args.npix_min:
@@ -181,7 +187,7 @@ if __name__ == '__main__':
     print('Keep {} quasars'.format(pcaflux.shape[0]))
 
     ### Reject too small median and normalize by median
-    med = sp.array([ sp.median(pcaflux[i][pcaivar[i]>0.]) for i in range(pcaflux.shape[0]) ])
+    med = np.array([ sp.median(pcaflux[i][pcaivar[i]>0.]) for i in range(pcaflux.shape[0]) ])
     w = med>args.median_min
     pcaflux = pcaflux[w]/med[w][:,None]
     pcaivar = pcaivar[w]*(med[w][:,None])**2
@@ -200,11 +206,11 @@ if __name__ == '__main__':
 
     ### Get the mean
     tmeanspec = sp.zeros(pcaflux.shape[1],dtype='float32')
-    for i in range(10):
+    for i in range(1):
         step = sp.average(pcaflux,weights=pcaivar,axis=0)
-        print('INFO: Removing mean at step: ',i,step.min(), step.max())
+        #print('INFO: Removing mean at step: ',i,step.min(), step.max())
         tmeanspec += step
-        pcaflux -= step
+        #pcaflux -= step
 
     ### PCA
     print('INFO: Starting EMPCA')
