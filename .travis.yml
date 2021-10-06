@@ -1,6 +1,7 @@
 language: python
 python:
-    - "3.8.3"
+    - "3.9.7"
+    - "3.10.0"
 
 before_install:
   - sudo apt-get -y install libbz2-dev
