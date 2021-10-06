@@ -7,7 +7,7 @@ from setuptools import setup
 scripts = glob.glob('bin/*')
 
 description = "Redshift fitter from PCA and redshift priors"
-exec(open('redvsblue/_version.py').read())
+exec(open('py/redvsblue/_version.py').read())
 version = __version__
 
 setup(name="redvsblue",
